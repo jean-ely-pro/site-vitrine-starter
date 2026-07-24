@@ -1,0 +1,52 @@
+# The editing app (Next + Payload + Postgres) — for local development and for the
+# central editing server. The client's public site is a static export deployed
+# to shared hosting (see `pnpm export` / `pnpm deploy`), not this stack.
+#
+# Two ways to use it:
+#   1. Database only (recommended for development):
+#        docker compose up -d db
+#      then run the app on the host with `pnpm dev`.
+#   2. Full stack (the editing server):
+#        docker compose up --build
+#      builds the app image and serves it on http://localhost:3000.
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: site_vitrine
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+    ports:
+      - '5432:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d site_vitrine']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PAYLOAD_SECRET: ${PAYLOAD_SECRET:?Renseignez PAYLOAD_SECRET dans votre .env}
+      DATABASE_URI: postgres://postgres:postgres@db:5432/site_vitrine
+      NEXT_PUBLIC_SERVER_URL: ${NEXT_PUBLIC_SERVER_URL:-http://localhost:3000}
+      # Sync the schema on boot so the starter runs without a manual migration.
+      DATABASE_PUSH: 'true'
+      NODE_ENV: production
+    ports:
+      - '3000:3000'
+    volumes:
+      # Persist uploaded media outside the container.
+      - ./media:/app/media
+      # Persist database backups outside the container.
+      - ./backups:/app/backups

@@ -1,0 +1,16 @@
+node_modules
+.next
+.git
+.github
+media
+uploads
+postgres-data
+backups
+.env
+.env.*
+!.env.example
+*.log
+coverage
+playwright-report
+test-results
+README*.md
