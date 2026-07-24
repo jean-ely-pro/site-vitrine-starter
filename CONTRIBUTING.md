@@ -5,6 +5,17 @@ la vitesse. Ce guide explique **comment le code est organisé** et **comment y a
 chose sans casser les garanties du produit** — même s'il s'agit de votre première
 contribution.
 
+## En bref — le workflow
+
+`issue → branche → commit → pull request → merge`
+
+1. **Une issue** décrit le besoin : bug à corriger ou fonctionnalité à ajouter (modèles dans
+   `.github/ISSUE_TEMPLATE/`). Assignez-la-vous, ou commentez pour la réserver.
+2. **Une branche depuis `main`** par issue (ex. `feat/bloc-galerie`, `fix/contraste-prix`).
+3. **Des commits** clairs, en français à l'impératif — un commit = un changement cohérent.
+4. **Une pull request** qui référence l'issue (« Closes #12 ») et décrit comment tester.
+5. **Merge** dans `main` une fois la PR relue et les vérifications passées.
+
 ## Le produit en une phrase
 
 Un site vitrine livré clé en main à un artisan ou une TPE, que **le client lui-même**
@@ -101,8 +112,8 @@ intégré, même s'il « marche ».
 - **Performance** — `width`/`height` sur chaque `<img>`, `loading="lazy"` hors hero, conversion
   WebP/AVIF automatique.
 
-En cas de doute sur une décision produit, **posez la question dans la pull request** plutôt que
-de supposer. Si une exigence semble irréalisable, **dites-le** plutôt que de la contourner en
+En cas de doute sur une décision produit, **posez la question dans l'issue** plutôt que de
+supposer. Si une exigence semble irréalisable, **dites-le** plutôt que de la contourner en
 silence.
 
 ## Langue
@@ -116,14 +127,18 @@ Ne pas construire, même si l'idée est bonne : statistiques/Matomo, avis client
 newsletter, assistant conversationnel intégré, prise de rendez-vous, paiement, e-commerce. Ces briques
 dépassent la promesse d'un simple site vitrine.
 
-## Branches, commits et pull requests
+## Issues, branches, commits et pull requests
 
-- Travaillez sur une **branche depuis `main`** (une branche = un changement cohérent).
+- Partez d'une **issue** (bug ou fonctionnalité) et assignez-la-vous. En cas de doute sur une
+  décision produit, posez la question **dans l'issue** plutôt que de supposer.
+- Créez une **branche depuis `main`** rattachée à l'issue (une branche = un changement
+  cohérent) : `feat/…` pour une fonctionnalité, `fix/…` pour une correction.
 - Messages de commit **en français, à l'impératif** et clairs (« Ajoute le bloc Horaires »,
   pas « wip »). Un commit = un changement cohérent ; consultez `git log` pour le style.
-- La pull request **décrit ce qui change et comment le tester** à la main (ex. « créé une
-  actualité, publiée, visible sur /actualites »). Elle est prête quand l'application démarre,
-  le parcours concerné fonctionne et le `README` est à jour si le comportement visible a changé.
+- La pull request **référence son issue** (« Closes #12 ») et **décrit ce qui change et comment
+  le tester** à la main (ex. « créé une actualité, publiée, visible sur /actualites »). Elle est
+  prête quand l'application démarre, le parcours concerné fonctionne et le `README` est à jour
+  si le comportement visible a changé. On **merge** dans `main` après relecture.
 
 ## Vérifier avant de proposer un changement
 
