@@ -1,0 +1,63 @@
+# Dépendances
+node_modules/
+.pnp
+.pnp.js
+.yarn/
+
+# Next.js
+.next/
+out/
+build/
+next-env.d.ts
+
+# Payload
+/media/
+/uploads/
+payload-types.ts.bak
+
+# Environnement — ne jamais committer de secrets
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Base de données (volumes Docker locaux)
+/postgres-data/
+*.sql.gz
+/backups/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Tests et couverture
+/coverage/
+/playwright-report/
+/test-results/
+
+# Système
+.DS_Store
+Thumbs.db
+
+# Éditeurs
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+
+# Divers
+.vercel
+.turbo
+tsconfig.tsbuildinfo
+
+# Docs internes gardées en local, hors du dépôt (cadrage, spec, backlog, déploiement…)
+# Règle : tout markdown à la racine est ignoré, sauf le README et le guide de contribution.
+# (Portée limitée à la racine : les modèles .md sous .github/ restent versionnés.)
+/*.md
+!/README.md
+!/README.fr.md
+!/CONTRIBUTING.md

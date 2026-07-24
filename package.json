@@ -1,0 +1,66 @@
+{
+  "name": "site-vitrine-starter",
+  "version": "0.1.0",
+  "description": "Turnkey showcase website a small-business owner administers themselves. Next.js App Router + Payload 3.",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.22.0",
+  "engines": {
+    "node": ">=20.9.0",
+    "pnpm": ">=9"
+  },
+  "scripts": {
+    "dev": "cross-env NODE_OPTIONS=--no-deprecation next dev",
+    "devsafe": "rimraf .next && cross-env NODE_OPTIONS=--no-deprecation next dev",
+    "build": "cross-env NODE_OPTIONS=--no-deprecation next build",
+    "start": "cross-env NODE_OPTIONS=--no-deprecation node scripts/serve-standalone.mjs",
+    "generate:types": "cross-env NODE_OPTIONS=--no-deprecation payload generate:types",
+    "generate:importmap": "cross-env NODE_OPTIONS=--no-deprecation payload generate:importmap",
+    "payload": "cross-env NODE_OPTIONS=--no-deprecation payload",
+    "migrate": "cross-env NODE_OPTIONS=--no-deprecation payload migrate",
+    "migrate:create": "cross-env NODE_OPTIONS=--no-deprecation payload migrate:create",
+    "export": "node scripts/export.mjs",
+    "deploy": "node scripts/deploy.mjs",
+    "test": "vitest run",
+    "test:a11y": "node scripts/a11y.mjs"
+  },
+  "dependencies": {
+    "@payloadcms/db-postgres": "3.86.0",
+    "@payloadcms/email-nodemailer": "3.86.0",
+    "@payloadcms/next": "3.86.0",
+    "@payloadcms/richtext-lexical": "3.86.0",
+    "@payloadcms/translations": "3.86.0",
+    "@payloadcms/ui": "3.86.0",
+    "cross-env": "^7.0.3",
+    "graphql": "^16.8.1",
+    "next": "16.2.10",
+    "otplib": "13.4.1",
+    "payload": "3.86.0",
+    "qrcode": "1.5.4",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "sharp": "0.35.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/node": "^22.10.0",
+    "@types/qrcode": "^1.5.5",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "axe-core": "^4.12.1",
+    "basic-ftp": "^6.0.1",
+    "jsdom": "^29.1.1",
+    "postcss": "^8.4.31",
+    "rimraf": "^6.0.1",
+    "ssh2-sftp-client": "^12.1.1",
+    "tailwindcss": "4.3.3",
+    "typescript": "^5.7.0",
+    "vitest": "^4.1.10"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "sharp",
+      "esbuild"
+    ]
+  }
+}
