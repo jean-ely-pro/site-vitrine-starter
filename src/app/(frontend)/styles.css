@@ -1,0 +1,80 @@
+@import 'tailwindcss';
+
+/*
+ * Brand colours are injected at request time from the Couleurs global (see the
+ * frontend layout). These map the runtime CSS variables onto Tailwind utilities,
+ * so `bg-brand`, `text-ink`, `bg-canvas`, etc. follow whatever the owner picked.
+ */
+@theme inline {
+  --color-brand: var(--brand-primary);
+  --color-brand-secondary: var(--brand-secondary);
+  --color-ink: var(--brand-text);
+  --color-canvas: var(--brand-background);
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/*
+ * Fallback values, used until the per-site colours load. Fonts are the system
+ * stack: no Google Fonts, no third-party request — required for GDPR.
+ */
+:root {
+  --brand-primary: #1d4ed8;
+  --brand-secondary: #0f766e;
+  --brand-text: #1f2937;
+  --brand-background: #ffffff;
+}
+
+body {
+  background: var(--brand-background);
+  color: var(--brand-text);
+  font-family: var(--font-sans);
+  line-height: 1.6;
+}
+
+/* Keyboard skip link: off-screen until focused. */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 50;
+  padding: 0.5rem 1rem;
+  background: #111827;
+  color: #ffffff;
+}
+
+.skip-link:focus {
+  left: 0;
+}
+
+/* Visible keyboard focus everywhere. */
+:where(a, button, input, textarea, select):focus-visible {
+  outline: 3px solid var(--brand-primary);
+  outline-offset: 2px;
+}
+
+/* Readable rich-text body (article content, text + image block). */
+.rich-text {
+  line-height: 1.7;
+}
+.rich-text h2 {
+  margin: 1.75rem 0 0.5rem;
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+.rich-text h3 {
+  margin: 1.5rem 0 0.5rem;
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+.rich-text p {
+  margin: 0 0 1rem;
+}
+.rich-text ul,
+.rich-text ol {
+  margin: 0 0 1rem 1.25rem;
+  list-style: revert;
+}
+.rich-text a {
+  color: var(--brand-primary);
+  text-decoration: underline;
+}
