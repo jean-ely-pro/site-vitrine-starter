@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Guide de contribution
+    url: https://github.com/jean-ely-gendrau/site-vitrine-template/blob/main/CONTRIBUTING.md
+    about: À lire avant de commencer — conventions, accessibilité, RGPD.
