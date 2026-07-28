@@ -1,9 +1,8 @@
 # Contribuer au starter
 
-Merci de votre intérêt. Ici, la clarté et le respect des contraintes du produit priment sur
-la vitesse. Ce guide explique **comment le code est organisé** et **comment y ajouter quelque
-chose sans casser les garanties du produit** — même s'il s'agit de votre première
-contribution.
+Ici, la clarté et le respect des contraintes du produit priment sur la vitesse. Ce guide
+explique comment le code est organisé et comment y ajouter quelque chose sans casser les
+garanties du produit, même pour une première contribution.
 
 ## En bref — le workflow
 
@@ -97,29 +96,28 @@ base de production vierge se construit à partir de ces migrations.
 Elles viennent d'un audit réel du prototype. Un changement qui les enfreint ne sera pas
 intégré, même s'il « marche ».
 
-- **Accessibilité** — contraste du texte **≥ 4,5:1**. **Interdiction des utilitaires
-  `opacity-*` sur du texte** (cause d'échecs mesurés) : un gris discret se définit par un token
-  de couleur validé. `alt` obligatoire sur les images, un seul `<h1>` par page, hiérarchie de
-  titres sans saut de niveau, `<main>` et lien d'évitement présents.
-- **Rendu et SEO** — le contenu éditorial est présent dans le **premier HTML serveur** (certains
-  robots d'indexation n'exécutent pas le JS). Un `<title>` et une méta-description **uniques par page**,
-  `<html lang="fr">`, JSON-LD `LocalBusiness`, `sitemap.xml` et `robots.txt`. Le hero est une
-  vraie `<img>` (jamais un `background-image`).
-- **RGPD** — **aucune ressource tierce sur le site public** : pas de CDN d'images, pas de
-  Google Fonts distant. Tout est auto-hébergé. Case de consentement du formulaire **non
-  pré-cochée**.
-- **Conversion** — téléphone et e-mail **cliquables** (`tel:` / `mailto:`).
+- **Accessibilité** — contraste du texte ≥ 4,5:1. Les utilitaires `opacity-*` sont interdits
+  sur du texte (cause d'échecs mesurés) : un gris discret se définit par un token de couleur
+  validé. `alt` obligatoire sur les images, un seul `<h1>` par page, hiérarchie de titres sans
+  saut de niveau, `<main>` et lien d'évitement présents.
+- **Rendu et SEO** — le contenu éditorial est présent dans le premier HTML serveur (certains
+  robots d'indexation n'exécutent pas le JS). Un `<title>` et une méta-description uniques par
+  page, `<html lang="fr">`, JSON-LD `LocalBusiness`, `sitemap.xml` et `robots.txt`. Le hero est
+  une vraie `<img>` (jamais un `background-image`).
+- **RGPD** — aucune ressource tierce sur le site public : pas de CDN d'images, pas de Google
+  Fonts distant. Tout est auto-hébergé. Case de consentement du formulaire non pré-cochée.
+- **Conversion** — téléphone et e-mail cliquables (`tel:` / `mailto:`).
 - **Performance** — `width`/`height` sur chaque `<img>`, `loading="lazy"` hors hero, conversion
   WebP/AVIF automatique.
 
-En cas de doute sur une décision produit, **posez la question dans l'issue** plutôt que de
-supposer. Si une exigence semble irréalisable, **dites-le** plutôt que de la contourner en
+En cas de doute sur une décision produit, posez la question dans l'issue plutôt que de
+supposer. Si une exigence semble irréalisable, dites-le plutôt que de la contourner en
 silence.
 
 ## Langue
 
-- **Interface d'administration, libellés, messages, textes d'aide : en français.**
-- **Code, noms de variables, commentaires : en anglais.**
+- Interface d'administration, libellés, messages, textes d'aide : en français.
+- Code, noms de variables, commentaires : en anglais.
 
 ## Hors périmètre
 
@@ -129,16 +127,15 @@ dépassent la promesse d'un simple site vitrine.
 
 ## Issues, branches, commits et pull requests
 
-- Partez d'une **issue** (bug ou fonctionnalité) et assignez-la-vous. En cas de doute sur une
-  décision produit, posez la question **dans l'issue** plutôt que de supposer.
-- Créez une **branche depuis `main`** rattachée à l'issue (une branche = un changement
-  cohérent) : `feat/…` pour une fonctionnalité, `fix/…` pour une correction.
-- Messages de commit **en français, à l'impératif** et clairs (« Ajoute le bloc Horaires »,
-  pas « wip »). Un commit = un changement cohérent ; consultez `git log` pour le style.
-- La pull request **référence son issue** (« Closes #12 ») et **décrit ce qui change et comment
-  le tester** à la main (ex. « créé une actualité, publiée, visible sur /actualites »). Elle est
+- Partez d'une issue (bug ou fonctionnalité) et assignez-la-vous.
+- Créez une branche depuis `main` rattachée à l'issue (une branche = un changement cohérent) :
+  `feat/…` pour une fonctionnalité, `fix/…` pour une correction.
+- Messages de commit en français, à l'impératif et clairs (« Ajoute le bloc Horaires », pas
+  « wip »). Un commit = un changement cohérent ; consultez `git log` pour le style.
+- La pull request référence son issue (« Closes #12 ») et décrit ce qui change et comment le
+  tester à la main (ex. « créé une actualité, publiée, visible sur /actualites »). Elle est
   prête quand l'application démarre, le parcours concerné fonctionne et le `README` est à jour
-  si le comportement visible a changé. On **merge** dans `main` après relecture.
+  si le comportement visible a changé. Le merge dans `main` a lieu après relecture.
 
 ## Vérifier avant de proposer un changement
 

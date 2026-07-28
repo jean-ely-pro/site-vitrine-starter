@@ -15,8 +15,10 @@ contrastes suffisants, hiérarchie des titres saine — au lieu de les lui laiss
   admin sur `/admin` comme un route group Next — pas de serveur séparé, pas de CORS.
 - **PostgreSQL** (`@payloadcms/db-postgres`)
 - **TypeScript** partout, types Payload générés et consommés par le front
-- **Docker / Docker Compose** pour le développement et la production
-- Rendu statique / ISR ; le contenu éditorial est présent dès la première réponse HTML serveur.
+- **Docker / Docker Compose** pour le développement et pour le serveur d'édition
+- Le contenu éditorial est présent dès la première réponse HTML du serveur. Le site remis au
+  client est un **instantané statique** : publier, c'est reconstruire le site puis le déposer
+  sur son hébergement (`pnpm export` puis `pnpm deploy`).
 
 ## Prérequis
 
@@ -141,8 +143,8 @@ Le client construit le site public depuis l'admin, sans jamais toucher aux URL n
 - **La navigation** — le menu et le pied de page pointent vers les pages par référence :
   créer une page et l'ajouter au menu est une seule action.
 - **La publication** — une page est en brouillon ou publiée ; seules les pages publiées sont
-  visibles. Enregistrer une page ou un réglage met à jour les pages concernées à la volée
-  (ISR), sans reconstruction.
+  visibles. Enregistrer une page ou un réglage rafraîchit aussitôt les pages concernées sur le
+  serveur d'édition ; le site du client, lui, change à la publication suivante.
 - **Le référencement** — chaque page a un titre et une méta-description uniques (aperçu Google
   en direct, compteur ~155 caractères), un JSON-LD `LocalBusiness` construit depuis les
   réglages, et le site sert `sitemap.xml` et `robots.txt`. Aucune ressource tierce n'est
@@ -155,7 +157,7 @@ Le travail avance un lot à la fois.
 - **Lot 0 — Socle** (fait) : une application qui démarre, un admin français où l'on se
   connecte, une politique de mot de passe et la 2FA.
 - **Lot 1 — Pages et rendu public** (fait) : réglages, pages depuis des modèles, menu et pied
-  de page, rendu statique/ISR, référencement par page, JSON-LD `LocalBusiness`, `sitemap.xml`
+  de page, rendu serveur, référencement par page, JSON-LD `LocalBusiness`, `sitemap.xml`
   / `robots.txt`.
 - **Lot 2 — Médiathèque** (fait) : upload glisser-déposer, recadrage et point focal, tailles
   WebP automatiques servies en `srcset` responsive, poids/format/dimensions avec alerte de

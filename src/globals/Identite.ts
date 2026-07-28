@@ -44,7 +44,7 @@ export const Identite: GlobalConfig = {
       relationTo: 'media',
       label: 'Logo',
       admin: {
-        description: 'Affiché dans l’en-tête du site. Le texte alternatif est demandé à l’envoi.',
+        description: 'Affiché dans l’en-tête du site. Une description de l’image vous sera demandée à l’envoi.',
       },
     },
     {

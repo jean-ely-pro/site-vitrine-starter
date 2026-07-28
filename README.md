@@ -15,8 +15,10 @@ contrast, a sound heading hierarchy — instead of leaving them to the owner.
   admin on `/admin` as a Next route group — no separate server, no CORS.
 - **PostgreSQL** (`@payloadcms/db-postgres`)
 - **TypeScript** throughout, with Payload types generated and consumed by the front end
-- **Docker / Docker Compose** for development and production
-- Static / ISR rendering; editorial content is present in the first server HTML response.
+- **Docker / Docker Compose** for development and for the editing server
+- Editorial content is present in the first server HTML response. The site handed to the
+  owner is a **static snapshot**: publishing means rebuilding the site, then uploading it to
+  their hosting (`pnpm export`, then `pnpm deploy`).
 
 ## Requirements
 
@@ -135,7 +137,8 @@ The owner builds the public site from the admin, without touching URLs or code:
 - **Navigation** — the menu and footer link to pages by reference, so creating a page and
   adding it to the menu is one action.
 - **Publishing** — pages are draft or published; only published pages are public. Saving a
-  page or a global refreshes the affected public pages on the fly (ISR), without a rebuild.
+  page or a global refreshes the affected pages on the editing server right away; the owner's
+  site changes at the next publish.
 - **SEO** — each page has a unique title and meta description (with a live Google preview and
   a ~155-character counter), a `LocalBusiness` JSON-LD built from the settings, and the site
   serves `sitemap.xml` and `robots.txt`. No third-party resources are loaded on the public
@@ -148,7 +151,7 @@ Work proceeds one lot at a time.
 - **Lot 0 — Socle** (done): an app that starts, a French admin you log into, a password
   policy, and 2FA.
 - **Lot 1 — Pages and public rendering** (done): settings, pages from templates, menu and
-  footer, static/ISR rendering, per-page SEO, `LocalBusiness` JSON-LD, `sitemap.xml` /
+  footer, server rendering, per-page SEO, `LocalBusiness` JSON-LD, `sitemap.xml` /
   `robots.txt`.
 - **Lot 2 — Media library** (done): drag-and-drop upload, crop and focal point, automatic
   WebP sizes served as responsive `srcset`, weight/format/dimensions with an over-threshold

@@ -29,7 +29,7 @@ export const Hero: Block = {
       type: 'upload',
       relationTo: 'media',
       label: 'Image de fond',
-      admin: { description: 'L’image affichée derrière le titre. Le texte alternatif est demandé à l’envoi.' },
+      admin: { description: 'L’image affichée derrière le titre. Une description de l’image vous sera demandée à l’envoi.' },
     },
     callToActionField({ name: 'cta', label: 'Bouton principal' }),
   ],
