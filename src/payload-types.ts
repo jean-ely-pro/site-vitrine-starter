@@ -189,7 +189,7 @@ export interface Page {
              */
             subheading?: string | null;
             /**
-             * L’image affichée derrière le titre. Le texte alternatif est demandé à l’envoi.
+             * L’image affichée derrière le titre. Une description de l’image vous sera demandée à l’envoi.
              */
             image?: (number | null) | Media;
             cta?: {
@@ -1071,7 +1071,7 @@ export interface Identite {
    */
   slogan?: string | null;
   /**
-   * Affiché dans l’en-tête du site. Le texte alternatif est demandé à l’envoi.
+   * Affiché dans l’en-tête du site. Une description de l’image vous sera demandée à l’envoi.
    */
   logo?: (number | null) | Media;
   /**
