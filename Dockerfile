@@ -55,6 +55,11 @@ COPY --from=builder /app/public ./public
 RUN mkdir .next && chown nextjs:nodejs .next
 # Backups are written here; mount a volume at /app/backups to persist them.
 RUN mkdir backups && chown nextjs:nodejs backups
+# Uploaded media lands here. The directory must exist and belong to the runtime
+# user before any volume is mounted on it: Docker gives a fresh named volume the
+# ownership of the image path it covers, and a root-owned one makes every upload
+# fail with EACCES.
+RUN mkdir media && chown nextjs:nodejs media
 
 # Next.js standalone output (self-contained server + traced dependencies).
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
