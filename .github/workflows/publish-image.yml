@@ -1,0 +1,76 @@
+# Publie l'image applicative sur GHCR.
+#
+# `latest` est ce que toutes les instances clientes exécutent par défaut : il
+# n'est produit que par ce workflow, sur `main`. Une construction locale depuis
+# une branche de travail ne peut donc plus le remplacer, même par erreur.
+#
+# Les branches et les tags git obtiennent leur propre tag d'image, ce qui permet
+# de faire tourner une variante devant un client sans toucher aux autres.
+
+name: Publier l'image
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  # Permet de publier l'image d'une branche à la demande, sans attendre un push.
+  workflow_dispatch:
+
+concurrency:
+  # Une seule publication à la fois par référence : deux poussées rapprochées ne
+  # doivent pas se disputer le même tag.
+  group: image-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  IMAGE: ghcr.io/${{ github.repository }}
+
+jobs:
+  publier:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          # Jeton fourni par Actions : aucun secret à gérer, et ses droits
+          # s'arrêtent à ce dépôt.
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE }}
+          # `latest` uniquement sur la branche par défaut ; une branche publiée à
+          # la demande ne produit que son propre tag.
+          tags: |
+            type=ref,event=branch
+            type=ref,event=tag
+            type=sha,format=short
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # Le cache du registre évite de reconstruire toute l'application à
+          # chaque poussée ; la construction complète est longue (sharp, Next).
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Récapituler
+        run: |
+          echo "### Image publiée" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo "${{ steps.meta.outputs.tags }}" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
