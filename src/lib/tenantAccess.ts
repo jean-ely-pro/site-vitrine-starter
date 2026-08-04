@@ -75,12 +75,23 @@ export const userCanAccessTenant = (user: unknown, tenantId: number | string): b
  * empty filter — matters: a user with no tenant must see nothing, and an
  * `{ in: [] }` clause is not reliably empty across adapters.
  */
-export const scopeToTenants = (user: unknown): true | false | Where => {
+export const scopeToTenants = (user: unknown, field = 'tenant'): true | false | Where => {
   if (isSuperAdmin(user)) return true
   const ids = tenantIdsForUser(user)
   if (ids.length === 0) return false
-  return { tenant: { in: ids } }
+  return { [field]: { in: ids } } as Where
 }
+
+/**
+ * Same scoping for the `users` collection.
+ *
+ * A content document carries a single `tenant`; an account carries an array of
+ * them, which the plugin stores under `tenants.tenant`. Filtering a user query
+ * on `tenant` raises "Cannot find field for path at tenant" — a 500 rather than
+ * a refusal, so the mistake surfaces as a broken page, not as a leak.
+ */
+export const scopeUsersToTenants = (user: unknown): true | false | Where =>
+  scopeToTenants(user, 'tenants.tenant')
 
 /**
  * Read access for tenant-owned content that the public site consumes.

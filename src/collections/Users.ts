@@ -4,7 +4,7 @@ import {
   hiddenFromEditors,
   isSuperAdmin,
   isTenantAdmin,
-  scopeToTenants,
+  scopeUsersToTenants,
   superAdminOnlyField,
 } from '../lib/tenantAccess'
 import { guardTenantEscalation } from './hooks/accessGuards'
@@ -52,7 +52,7 @@ export const Users: CollectionConfig = {
       // An editor sees only themselves — the list of a client's accounts, with
       // their e-mails and roles, is the owner's business.
       if (!isTenantAdmin(req.user)) return own
-      const scope = scopeToTenants(req.user)
+      const scope = scopeUsersToTenants(req.user)
       if (scope === false) return own
       if (scope === true) return true
       return { or: [scope, own] }
@@ -64,13 +64,13 @@ export const Users: CollectionConfig = {
       if (req.user.id === id) return true
       if (!isAdmin(req)) return false
       // A client admin manages their own team, never another client's.
-      return scopeToTenants(req.user)
+      return scopeUsersToTenants(req.user)
     },
     delete: ({ req }) => {
       if (!req.user) return false
       if (isSuperAdmin(req.user)) return true
       if (!isAdmin(req)) return false
-      return scopeToTenants(req.user)
+      return scopeUsersToTenants(req.user)
     },
     admin: ({ req }) => Boolean(req.user),
   },

@@ -4,6 +4,7 @@ import {
   isSuperAdmin,
   isTenantAdmin,
   scopeToTenants,
+  scopeUsersToTenants,
   hiddenFromEditors,
   superAdminOnly,
   tenantSettingsWrite,
@@ -160,5 +161,26 @@ describe('périmètre d’un éditeur', () => {
     // l'API : c'est l'access qui refuse, le masquage ne fait qu'accompagner.
     expect(hiddenFromEditors({ user: boulangerEditor })).toBe(true)
     expect(tenantSettingsWrite(req(boulangerEditor))).toBe(false)
+  })
+})
+
+describe('chemin du champ tenant', () => {
+  it('un contenu porte un tenant, un compte en porte un tableau', () => {
+    // Un document de contenu a un champ `tenant` ; le plugin range ceux d'un
+    // compte sous `tenants.tenant`. Filtrer un compte sur `tenant` déclenche
+    // « Cannot find field for path at tenant » — une 500, pas un refus : la
+    // page casse au lieu de fuir, mais elle casse.
+    expect(scopeToTenants(boulanger)).toEqual({ tenant: { in: [10] } })
+    expect(scopeUsersToTenants(boulanger)).toEqual({ 'tenants.tenant': { in: [10] } })
+  })
+
+  it('les deux refusent pareillement un compte sans client', () => {
+    expect(scopeToTenants(orphan)).toBe(false)
+    expect(scopeUsersToTenants(orphan)).toBe(false)
+  })
+
+  it("l'agence n'est filtrée dans aucun des deux cas", () => {
+    expect(scopeToTenants(superAdmin)).toBe(true)
+    expect(scopeUsersToTenants(superAdmin)).toBe(true)
   })
 })
