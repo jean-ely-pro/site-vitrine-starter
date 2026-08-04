@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next'
 
-import { HOME_SLUG, SERVER_URL } from '../lib/constants'
+import { HOME_SLUG, serverUrl } from '../lib/constants'
 import { getPublishedArticles, getPublishedLegalPages, getPublishedPages } from '../lib/queries'
 
 // Built per request rather than at build time: it must reflect the content that
@@ -18,25 +18,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const pageEntries: MetadataRoute.Sitemap = pages
     .filter((page) => page.slug)
     .map((page) => ({
-      url: new URL(page.slug === HOME_SLUG ? '/' : `/${page.slug}`, SERVER_URL).toString(),
+      url: new URL(page.slug === HOME_SLUG ? '/' : `/${page.slug}`, serverUrl()).toString(),
       lastModified: page.updatedAt ?? undefined,
     }))
 
   const articleEntries: MetadataRoute.Sitemap = articles
     .filter((article) => article.slug)
     .map((article) => ({
-      url: new URL(`/actualites/${article.slug}`, SERVER_URL).toString(),
+      url: new URL(`/actualites/${article.slug}`, serverUrl()).toString(),
       lastModified: article.updatedAt ?? undefined,
     }))
 
   // The news index itself, listed once when at least one article exists.
   const indexEntry: MetadataRoute.Sitemap = articleEntries.length
-    ? [{ url: new URL('/actualites', SERVER_URL).toString() }]
+    ? [{ url: new URL('/actualites', serverUrl()).toString() }]
     : []
 
   const legalEntries: MetadataRoute.Sitemap = legalPages
     .filter((legal) => legal.slug)
-    .map((legal) => ({ url: new URL(`/${legal.slug}`, SERVER_URL).toString() }))
+    .map((legal) => ({ url: new URL(`/${legal.slug}`, serverUrl()).toString() }))
 
   return [...pageEntries, ...indexEntry, ...articleEntries, ...legalEntries]
 }

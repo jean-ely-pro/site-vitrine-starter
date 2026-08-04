@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 
 import type { Category } from '../../../payload-types'
 import { SiteImage } from '../../../components/site/SiteImage'
-import { SERVER_URL } from '../../../lib/constants'
+import { serverUrl } from '../../../lib/constants'
 import { formatFrenchDate } from '../../../lib/formatDate'
 import { getPublishedArticles, getSiteGlobals } from '../../../lib/queries'
 
@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic'
 
 export async function generateMetadata(): Promise<Metadata> {
   const { identite } = await getSiteGlobals()
-  const canonical = new URL('/actualites', SERVER_URL).toString()
+  const canonical = new URL('/actualites', serverUrl()).toString()
   return {
     title: 'Actualités',
     description: `Toutes les actualités de ${identite.companyName || 'notre établissement'}.`,

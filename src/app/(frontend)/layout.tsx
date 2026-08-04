@@ -4,11 +4,10 @@ import React from 'react'
 import { SiteFooter } from '../../components/site/SiteFooter'
 import { SiteHeader } from '../../components/site/SiteHeader'
 import { brandColorStyle } from '../../lib/colorStyle'
+import { serverUrl } from '../../lib/constants'
 import { getPublishedLegalPages, getSiteGlobals } from '../../lib/queries'
 
 import './styles.css'
-
-const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000'
 
 // Site-wide metadata. Per-page titles slot into the template, so every page has
 // a unique <title>; the default description comes from the company identity.
@@ -16,7 +15,7 @@ export async function generateMetadata(): Promise<Metadata> {
   try {
     const { identite } = await getSiteGlobals()
     return {
-      metadataBase: new URL(serverUrl),
+      metadataBase: new URL(serverUrl()),
       title: {
         default: identite.companyName || 'Site vitrine',
         template: `%s — ${identite.companyName || 'Site vitrine'}`,
@@ -25,7 +24,7 @@ export async function generateMetadata(): Promise<Metadata> {
     }
   } catch {
     // No database (e.g. building the Docker image) — a safe default.
-    return { metadataBase: new URL(serverUrl), title: 'Site vitrine' }
+    return { metadataBase: new URL(serverUrl()), title: 'Site vitrine' }
   }
 }
 
