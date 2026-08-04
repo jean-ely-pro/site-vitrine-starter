@@ -8,14 +8,33 @@ import { APIError } from 'payload'
 
 import { isSuperAdmin, tenantIdsForUser } from '../../lib/tenantAccess'
 
-// Count admins that can still sign in, optionally excluding one id.
-const countActiveAdmins = async (req: PayloadRequest, excludeId?: string | number): Promise<number> => {
+/**
+ * Count admins that can still sign in *for the same client*, excluding one id.
+ *
+ * The tenant filter is what makes this guard mean anything on a shared
+ * installation. Counting across every client fails both ways: one client's last
+ * administrator could be removed because another client still has one — locking
+ * them out of their own site — while the first administrator of a new client
+ * could not be demoted, being counted as the platform's last.
+ *
+ * A super-admin counts as an active administrator: the role is above `admin`,
+ * and ignoring it would refuse a legitimate change.
+ */
+const countActiveAdmins = async (
+  req: PayloadRequest,
+  excludeId?: string | number,
+  tenants: Array<number | string> = [],
+): Promise<number> => {
   const result = await req.payload.count({
     collection: 'users',
+    // The guard protects against lock-out, so it must see every account, not
+    // only those the acting user is allowed to list.
+    overrideAccess: true,
     where: {
       and: [
-        { role: { equals: 'admin' } },
+        { role: { in: ['admin', 'super-admin'] } },
         { disabled: { not_equals: true } },
+        ...(tenants.length ? [{ tenants: { in: tenants } }] : []),
         ...(excludeId != null ? [{ id: { not_equals: excludeId } }] : []),
       ],
     },
@@ -38,16 +57,23 @@ export const blockDisabledLogin: CollectionBeforeLoginHook = ({ user }) => {
 export const guardLastAdmin: CollectionBeforeChangeHook = async ({ data, originalDoc, operation, req }) => {
   if (operation !== 'update' || !originalDoc) return data
 
-  const wasActiveAdmin = originalDoc.role === 'admin' && !originalDoc.disabled
+  const isAdminRole = (role: unknown) => role === 'admin' || role === 'super-admin'
+  const wasActiveAdmin = isAdminRole(originalDoc.role) && !originalDoc.disabled
   const newRole = (data.role ?? originalDoc.role) as string
   const newDisabled = (data.disabled ?? originalDoc.disabled) as boolean | undefined
-  const becomesInactive = newDisabled === true || newRole !== 'admin'
+  const becomesInactive = newDisabled === true || !isAdminRole(newRole)
 
   if (wasActiveAdmin && becomesInactive) {
-    const others = await countActiveAdmins(req, originalDoc.id)
+    // Counted among this account's own clients: on a shared installation the
+    // question is never "does the platform still have an admin" but "does this
+    // client still have one".
+    const tenants = tenantIdsForUser(originalDoc)
+    const others = await countActiveAdmins(req, originalDoc.id, tenants)
     if (others === 0) {
       throw new APIError(
-        'Impossible : c’est le dernier administrateur actif. Créez ou réactivez un autre administrateur d’abord.',
+        tenants.length
+          ? 'Impossible : c’est le dernier administrateur actif de ce client. Créez ou réactivez un autre administrateur d’abord.'
+          : 'Impossible : c’est le dernier administrateur actif. Créez ou réactivez un autre administrateur d’abord.',
         400,
         undefined,
         true,
@@ -110,10 +136,19 @@ export const guardTenantEscalation: CollectionBeforeChangeHook = async ({ data, 
 /** Block deleting the last active administrator. */
 export const preventLastAdminDelete: CollectionBeforeDeleteHook = async ({ id, req }) => {
   const doc = await req.payload.findByID({ collection: 'users', id, overrideAccess: true })
-  if (doc.role === 'admin' && !(doc as { disabled?: boolean }).disabled) {
-    const others = await countActiveAdmins(req, id)
+  const isAdminRole = doc.role === 'admin' || doc.role === 'super-admin'
+  if (isAdminRole && !(doc as { disabled?: boolean }).disabled) {
+    const tenants = tenantIdsForUser(doc)
+    const others = await countActiveAdmins(req, id, tenants)
     if (others === 0) {
-      throw new APIError('Impossible de supprimer le dernier administrateur actif.', 400, undefined, true)
+      throw new APIError(
+        tenants.length
+          ? 'Impossible de supprimer le dernier administrateur actif de ce client.'
+          : 'Impossible de supprimer le dernier administrateur actif.',
+        400,
+        undefined,
+        true,
+      )
     }
   }
 }

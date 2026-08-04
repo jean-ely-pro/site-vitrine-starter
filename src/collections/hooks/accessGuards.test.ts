@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { guardTenantEscalation } from './accessGuards'
+import { guardLastAdmin, guardTenantEscalation, preventLastAdminDelete } from './accessGuards'
 
 /**
  * Privilege escalation at account creation.
@@ -89,5 +89,109 @@ describe('portée du garde', () => {
       operation: 'update',
     })
     expect(data.role).toBe('super-admin')
+  })
+})
+
+/**
+ * Le garde « dernier administrateur », par client.
+ *
+ * Il a été écrit quand chaque client avait sa propre base : compter les
+ * administrateurs de toute l'installation revenait alors à compter ceux du
+ * client. Mutualisé, ce raccourci se retourne dans les deux sens — d'où ces
+ * tests, qui décrivent les deux échecs.
+ */
+
+// Capture le `where` envoyé à `count`, et répond ce que le test veut.
+type Hook = (a: unknown) => Promise<Record<string, any>>
+
+const guardWith = (total: number) => {
+  const queries: Array<Record<string, any>> = []
+  return {
+    req: {
+      payload: {
+        count: async (args: Record<string, any>) => {
+          queries.push(args)
+          return { totalDocs: total }
+        },
+        findByID: async () => ({ id: 7, role: 'admin', tenants: [{ tenant: 10 }] }),
+      },
+    },
+    queries,
+  }
+}
+
+// Le filtre tenant tel qu'il apparaît dans la requête, ou undefined.
+const tenantFilter = (query: Record<string, any> | undefined) =>
+  (query?.where?.and ?? []).find((c: Record<string, any>) => c.tenants)?.tenants?.in
+
+describe('dernier administrateur, par client', () => {
+  it('compte uniquement les administrateurs du même client', async () => {
+    const { req, queries } = guardWith(1)
+    await (guardLastAdmin as unknown as Hook)({
+      data: { role: 'editor' },
+      originalDoc: { id: 7, role: 'admin', disabled: false, tenants: [{ tenant: 10 }] },
+      operation: 'update',
+      req,
+    })
+    // Sans ce filtre, l'administrateur d'un autre client ferait nombre et
+    // laisserait celui-ci se retirer son propre accès.
+    expect(tenantFilter(queries[0])).toEqual([10])
+  })
+
+  it("refuse de retirer le dernier administrateur d'un client", async () => {
+    const { req } = guardWith(0)
+    await expect(
+      (guardLastAdmin as unknown as Hook)({
+        data: { role: 'editor' },
+        originalDoc: { id: 7, role: 'admin', disabled: false, tenants: [{ tenant: 10 }] },
+        operation: 'update',
+        req,
+      }),
+    ).rejects.toThrow(/dernier administrateur actif de ce client/)
+  })
+
+  it("laisse faire tant qu'il en reste un chez ce client", async () => {
+    const { req } = guardWith(1)
+    const data = await (guardLastAdmin as unknown as Hook)({
+      data: { role: 'editor' },
+      originalDoc: { id: 7, role: 'admin', disabled: false, tenants: [{ tenant: 10 }] },
+      operation: 'update',
+      req,
+    })
+    expect(data.role).toBe('editor')
+  })
+
+  it('traite le super-admin comme un administrateur actif', async () => {
+    // L'ignorer refuserait une modification légitime : le rôle est au-dessus
+    // d'`admin`, pas à côté.
+    const { req, queries } = guardWith(1)
+    await (guardLastAdmin as unknown as Hook)({
+      data: { disabled: true },
+      originalDoc: { id: 1, role: 'super-admin', disabled: false, tenants: [] },
+      operation: 'update',
+      req,
+    })
+    expect(queries[0].where.and[0].role.in).toContain('super-admin')
+  })
+
+  it('protège aussi la suppression, par client', async () => {
+    const { req, queries } = guardWith(0)
+    await expect((preventLastAdminDelete as unknown as Hook)({ id: 7, req })).rejects.toThrow(
+      /dernier administrateur actif de ce client/,
+    )
+    expect(tenantFilter(queries[0])).toEqual([10])
+  })
+
+  it('voit tous les comptes, pas seulement ceux que l’acteur peut lister', async () => {
+    // Le garde protège d'un enfermement dehors : filtré par les droits de
+    // l'acteur, il compterait moins d'administrateurs qu'il n'en existe.
+    const { req, queries } = guardWith(1)
+    await (guardLastAdmin as unknown as Hook)({
+      data: { role: 'editor' },
+      originalDoc: { id: 7, role: 'admin', disabled: false, tenants: [{ tenant: 10 }] },
+      operation: 'update',
+      req,
+    })
+    expect(queries[0].overrideAccess).toBe(true)
   })
 })
