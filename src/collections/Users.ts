@@ -1,11 +1,15 @@
-import type { CollectionConfig } from 'payload'
+import type { CollectionConfig, Where } from 'payload'
+
+import { isSuperAdmin, scopeToTenants, superAdminOnlyField } from '../lib/tenantAccess'
+import { guardTenantEscalation } from './hooks/accessGuards'
 
 import { blockDisabledLogin, guardLastAdmin, preventLastAdminDelete } from './hooks/accessGuards'
 import { enforcePasswordPolicy } from './hooks/enforcePasswordPolicy'
 import { stampPasswordChange } from './hooks/passwordChange'
 import { twoFactorDisable, twoFactorSetup, twoFactorVerify } from './endpoints/twoFactor'
 
-const isAdmin = (req: { user?: { role?: string } | null }): boolean => req.user?.role === 'admin'
+const isAdmin = (req: { user?: { role?: string } | null }): boolean =>
+  req.user?.role === 'admin' || req.user?.role === 'super-admin'
 
 export const Users: CollectionConfig = {
   slug: 'users',
@@ -27,15 +31,40 @@ export const Users: CollectionConfig = {
       'Les accès à l’administration. Créez un accès pour un collaborateur, ou révoquez-le sans le supprimer.',
   },
   access: {
-    read: ({ req }) => Boolean(req.user),
+    // Accounts are scoped like content: without this, any editor could list
+    // every client's users — e-mails and roles included — and an admin of one
+    // client could modify or delete an account belonging to another.
+    read: ({ req }): boolean | Where => {
+      if (!req.user) return false
+      if (isSuperAdmin(req.user)) return true
+      const own: Where = { id: { equals: req.user.id } }
+      const scope = scopeToTenants(req.user)
+      if (scope === false) return own
+      if (scope === true) return true
+      // Always allow reading one's own account, even before tenants are set:
+      // otherwise a user cannot open their own profile to change a password.
+      return { or: [scope, own] }
+    },
     create: ({ req }) => isAdmin(req),
-    update: ({ req, id }) => isAdmin(req) || req.user?.id === id,
-    delete: ({ req }) => isAdmin(req),
+    update: ({ req, id }) => {
+      if (!req.user) return false
+      if (isSuperAdmin(req.user)) return true
+      if (req.user.id === id) return true
+      if (!isAdmin(req)) return false
+      // A client admin manages their own team, never another client's.
+      return scopeToTenants(req.user)
+    },
+    delete: ({ req }) => {
+      if (!req.user) return false
+      if (isSuperAdmin(req.user)) return true
+      if (!isAdmin(req)) return false
+      return scopeToTenants(req.user)
+    },
     admin: ({ req }) => Boolean(req.user),
   },
   hooks: {
     beforeValidate: [enforcePasswordPolicy],
-    beforeChange: [guardLastAdmin, stampPasswordChange],
+    beforeChange: [guardTenantEscalation, guardLastAdmin, stampPasswordChange],
     beforeLogin: [blockDisabledLogin],
     beforeDelete: [preventLastAdminDelete],
   },
@@ -66,11 +95,19 @@ export const Users: CollectionConfig = {
       required: true,
       defaultValue: 'admin',
       options: [
+        { label: 'Super-administrateur (agence)', value: 'super-admin' },
         { label: 'Administrateur', value: 'admin' },
         { label: 'Éditeur', value: 'editor' },
       ],
+      access: {
+        // Only the agency may hand out a role. Without this, a client admin
+        // could promote themselves to super-admin and reach every other client.
+        update: superAdminOnlyField,
+      },
       admin: {
-        description: 'L’administrateur gère les accès ; l’éditeur gère uniquement les contenus.',
+        description:
+          'Le super-administrateur (agence) gère tous les clients ; ' +
+          'l’administrateur gère les accès de son client ; l’éditeur gère uniquement les contenus.',
       },
     },
     {

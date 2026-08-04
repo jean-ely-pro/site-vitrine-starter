@@ -1,0 +1,129 @@
+import { describe, expect, it } from 'vitest'
+
+import {
+  isSuperAdmin,
+  isTenantAdmin,
+  scopeToTenants,
+  superAdminOnly,
+  tenantIdsForUser,
+  tenantRead,
+  tenantReadPublished,
+  tenantWrite,
+  userCanAccessTenant,
+} from './tenantAccess'
+
+/**
+ * These tests are the safety net that replaces per-client databases.
+ *
+ * With one database per client, isolation was guaranteed by the infrastructure.
+ * Mutualised, it holds only as long as no access function returns an
+ * unrestricted `true`. Each test below states a way a client's data could leak
+ * to another; if one fails, that leak is real.
+ */
+
+const req = (user: unknown) => ({ req: { user } }) as never
+
+const superAdmin = { id: 1, role: 'super-admin' }
+const boulanger = { id: 2, role: 'admin', tenants: [{ tenant: 10 }] }
+const boulangerEditor = { id: 3, role: 'editor', tenants: [{ tenant: 10 }] }
+const orphan = { id: 4, role: 'admin', tenants: [] }
+
+describe('rôles', () => {
+  it('distingue le super-admin des administrateurs de client', () => {
+    expect(isSuperAdmin(superAdmin)).toBe(true)
+    expect(isSuperAdmin(boulanger)).toBe(false)
+    // Un admin de client reste un admin : il gère SON tenant.
+    expect(isTenantAdmin(boulanger)).toBe(true)
+    expect(isTenantAdmin(boulangerEditor)).toBe(false)
+  })
+
+  it('ne prend pas un rôle inventé pour un super-admin', () => {
+    expect(isSuperAdmin({ role: 'superadmin' })).toBe(false)
+    expect(isSuperAdmin({ role: 'super_admin' })).toBe(false)
+    expect(isSuperAdmin({ role: 'admin' })).toBe(false)
+    expect(isSuperAdmin(null)).toBe(false)
+    expect(isSuperAdmin(undefined)).toBe(false)
+    expect(isSuperAdmin('super-admin')).toBe(false)
+  })
+})
+
+describe('lecture des tenants rattachés', () => {
+  it('accepte les formes que Payload peut renvoyer', () => {
+    // La profondeur de peuplement change la forme ; n'en lire qu'une seule
+    // donnerait une liste vide, donc un utilisateur enfermé dehors.
+    expect(tenantIdsForUser({ tenants: [10] })).toEqual([10])
+    expect(tenantIdsForUser({ tenants: [{ tenant: 10 }] })).toEqual([10])
+    expect(tenantIdsForUser({ tenants: [{ tenant: { id: 10 } }] })).toEqual([10])
+    expect(tenantIdsForUser({ tenants: ['10'] })).toEqual(['10'])
+  })
+
+  it('ignore les entrées vides sans planter', () => {
+    expect(tenantIdsForUser({ tenants: null })).toEqual([])
+    expect(tenantIdsForUser({})).toEqual([])
+    expect(tenantIdsForUser(null)).toEqual([])
+  })
+
+  it('compare les identifiants sans se soucier du type', () => {
+    // Postgres renvoie des nombres, une URL des chaînes : un test strict
+    // refuserait l'accès à un utilisateur légitime.
+    expect(userCanAccessTenant(boulanger, '10')).toBe(true)
+    expect(userCanAccessTenant(boulanger, 10)).toBe(true)
+    expect(userCanAccessTenant(boulanger, 11)).toBe(false)
+  })
+})
+
+describe('cloisonnement', () => {
+  it("le super-admin n'est pas filtré", () => {
+    expect(scopeToTenants(superAdmin)).toBe(true)
+  })
+
+  it('un utilisateur de client est réduit à ses tenants', () => {
+    expect(scopeToTenants(boulanger)).toEqual({ tenant: { in: [10] } })
+    // Un éditeur est cloisonné exactement comme son administrateur : le rôle
+    // décide de ce qu'il peut faire, le tenant de ce qu'il peut voir.
+    expect(scopeToTenants(boulangerEditor)).toEqual({ tenant: { in: [10] } })
+  })
+
+  it('un utilisateur sans tenant ne voit rien', () => {
+    // `false`, et non un filtre vide : `{ in: [] }` n'est pas fiablement vide
+    // selon l'adaptateur, et laisserait passer toute la base.
+    expect(scopeToTenants(orphan)).toBe(false)
+    expect(scopeToTenants({ role: 'editor' })).toBe(false)
+  })
+
+  it('aucune fonction de contenu ne rend un `true` non filtré à un client', () => {
+    // La faille exacte du dépôt analysé : `Boolean(req.user)` autorisait
+    // GET /api/pages?limit=500 sur les documents d'un autre client.
+    for (const access of [tenantRead, tenantWrite, tenantReadPublished]) {
+      for (const user of [boulanger, boulangerEditor, orphan]) {
+        expect(access(req(user))).not.toBe(true)
+      }
+    }
+  })
+})
+
+describe('accès anonyme (site public statique)', () => {
+  it('ne voit que le contenu publié, jamais les brouillons', () => {
+    expect(tenantReadPublished(req(null))).toEqual({ _status: { equals: 'published' } })
+  })
+
+  it("n'a aucun accès aux collections sans cycle de publication", () => {
+    // Messages contient les e-mails des visiteurs : jamais lisible sans compte.
+    expect(tenantRead(req(null))).toBe(false)
+    expect(tenantWrite(req(null))).toBe(false)
+  })
+
+  it("ne peut rien écrire, même sur un tenant nommé", () => {
+    expect(tenantWrite(req(null))).toBe(false)
+  })
+})
+
+describe('réservé à l’agence', () => {
+  it("seul le super-admin atteint les enregistrements de tenants", () => {
+    expect(superAdminOnly(req(superAdmin))).toBe(true)
+    // Sinon un client pourrait se rattacher au tenant d'un autre.
+    expect(superAdminOnly(req(boulanger))).toBe(false)
+    expect(superAdminOnly(req(boulangerEditor))).toBe(false)
+    expect(superAdminOnly(req(null))).toBe(false)
+  })
+})

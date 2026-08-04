@@ -74,6 +74,14 @@ export interface Config {
     media: Media;
     messages: Message;
     users: User;
+    tenants: Tenant;
+    identite: Identite;
+    couleurs: Couleur;
+    contact: Contact;
+    horaires: Horaire;
+    reseaux: Reseau;
+    menu: Menu;
+    'pied-de-page': PiedDePage;
     'payload-kv': PayloadKv;
     'payload-folders': FolderInterface;
     'payload-locked-documents': PayloadLockedDocument;
@@ -93,6 +101,14 @@ export interface Config {
     media: MediaSelect<false> | MediaSelect<true>;
     messages: MessagesSelect<false> | MessagesSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
+    tenants: TenantsSelect<false> | TenantsSelect<true>;
+    identite: IdentiteSelect<false> | IdentiteSelect<true>;
+    couleurs: CouleursSelect<false> | CouleursSelect<true>;
+    contact: ContactSelect<false> | ContactSelect<true>;
+    horaires: HorairesSelect<false> | HorairesSelect<true>;
+    reseaux: ReseauxSelect<false> | ReseauxSelect<true>;
+    menu: MenuSelect<false> | MenuSelect<true>;
+    'pied-de-page': PiedDePageSelect<false> | PiedDePageSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-folders': PayloadFoldersSelect<false> | PayloadFoldersSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -104,24 +120,10 @@ export interface Config {
   };
   fallbackLocale: null;
   globals: {
-    identite: Identite;
-    couleurs: Couleur;
-    contact: Contact;
-    horaires: Horaire;
-    reseaux: Reseau;
-    menu: Menu;
-    'pied-de-page': PiedDePage;
     sauvegardes: Sauvegarde;
     diagnostic: Diagnostic;
   };
   globalsSelect: {
-    identite: IdentiteSelect<false> | IdentiteSelect<true>;
-    couleurs: CouleursSelect<false> | CouleursSelect<true>;
-    contact: ContactSelect<false> | ContactSelect<true>;
-    horaires: HorairesSelect<false> | HorairesSelect<true>;
-    reseaux: ReseauxSelect<false> | ReseauxSelect<true>;
-    menu: MenuSelect<false> | MenuSelect<true>;
-    'pied-de-page': PiedDePageSelect<false> | PiedDePageSelect<true>;
     sauvegardes: SauvegardesSelect<false> | SauvegardesSelect<true>;
     diagnostic: DiagnosticSelect<false> | DiagnosticSelect<true>;
   };
@@ -161,6 +163,7 @@ export interface UserAuthOperations {
  */
 export interface Page {
   id: number;
+  tenant?: (number | null) | Tenant;
   publishedAt?: string | null;
   /**
    * Le titre principal de la page (affiché en haut et proposé pour le menu).
@@ -345,6 +348,33 @@ export interface Page {
   _status?: ('draft' | 'published') | null;
 }
 /**
+ * Les sites hébergés sur cette installation. Réservé à l’agence.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tenants".
+ */
+export interface Tenant {
+  id: number;
+  /**
+   * Nom affiché dans le sélecteur de client (ex. « Boulangerie du Coin »).
+   */
+  name: string;
+  /**
+   * Identifiant technique, en minuscules, sans accent ni espace (ex. « demo-boulanger »). Sert au routage et au nom du projet de publication : le changer casse les liens existants.
+   */
+  slug: string;
+  /**
+   * Un client suspendu ou archivé n’est plus servi publiquement.
+   */
+  status: 'active' | 'suspended' | 'archived';
+  /**
+   * Adresse finale du site livré (ex. https://boulangerie-martin.fr). Alimente le sitemap et le robots.txt : la renseigner avant la première publication.
+   */
+  publicDomain?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Vos images. Glissez-déposez pour en ajouter, recadrez si besoin ; le site génère automatiquement des versions optimisées.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -352,6 +382,7 @@ export interface Page {
  */
 export interface Media {
   id: number;
+  tenant?: (number | null) | Tenant;
   /**
    * Décrit l’image pour les personnes malvoyantes et s’affiche si l’image ne se charge pas. Obligatoire.
    */
@@ -445,6 +476,7 @@ export interface FolderInterface {
  */
 export interface LegalPage {
   id: number;
+  tenant?: (number | null) | Tenant;
   publishedAt?: string | null;
   /**
    * Choisi à la création pour générer le texte. Le contenu reste ensuite entièrement modifiable.
@@ -488,6 +520,7 @@ export interface LegalPage {
  */
 export interface Actualite {
   id: number;
+  tenant?: (number | null) | Tenant;
   publishedAt?: string | null;
   /**
    * Le titre de l’actualité, affiché en haut de l’article et dans la liste.
@@ -556,6 +589,7 @@ export interface Actualite {
  */
 export interface Category {
   id: number;
+  tenant?: (number | null) | Tenant;
   /**
    * Le nom de la rubrique, affiché sur les actualités qui lui sont rattachées.
    */
@@ -575,6 +609,7 @@ export interface Category {
  */
 export interface Message {
   id: number;
+  tenant?: (number | null) | Tenant;
   /**
    * Cochez une fois le message traité.
    */
@@ -602,9 +637,9 @@ export interface User {
    */
   name?: string | null;
   /**
-   * L’administrateur gère les accès ; l’éditeur gère uniquement les contenus.
+   * Le super-administrateur (agence) gère tous les clients ; l’administrateur gère les accès de son client ; l’éditeur gère uniquement les contenus.
    */
-  role: 'admin' | 'editor';
+  role: 'super-admin' | 'admin' | 'editor';
   /**
    * Coché, cette personne ne peut plus se connecter, sans perdre son compte. Décochez pour réactiver.
    */
@@ -627,6 +662,12 @@ export interface User {
     | number
     | boolean
     | null;
+  tenants?:
+    | {
+        tenant: number | Tenant;
+        id?: string | null;
+      }[]
+    | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -645,6 +686,238 @@ export interface User {
     | null;
   password?: string | null;
   collection: 'users';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "identite".
+ */
+export interface Identite {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  /**
+   * Apparaît en haut du site et dans l’onglet du navigateur.
+   */
+  companyName: string;
+  /**
+   * Une phrase courte affichée sous le nom, dans l’en-tête.
+   */
+  slogan?: string | null;
+  /**
+   * Affiché dans l’en-tête du site. Une description de l’image vous sera demandée à l’envoi.
+   */
+  logo?: (number | null) | Media;
+  /**
+   * Présente votre activité en quelques phrases. Sert aussi de description par défaut dans les moteurs de recherche.
+   */
+  activityDescription?: string | null;
+  /**
+   * La dénomination officielle de l’entreprise, reprise dans les mentions légales.
+   */
+  legalName?: string | null;
+  /**
+   * Votre numéro SIRET (14 chiffres). Apparaît dans les mentions légales.
+   */
+  siret?: string | null;
+  /**
+   * Utilisée pour la fiche établissement affichée aux moteurs de recherche.
+   */
+  address?: {
+    /**
+     * Numéro et nom de rue. Ex. : 12 rue des Fleurs.
+     */
+    street?: string | null;
+    postalCode?: string | null;
+    city?: string | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "couleurs".
+ */
+export interface Couleur {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  /**
+   * Boutons, liens et éléments mis en avant.
+   */
+  primary: string;
+  /**
+   * Accents et éléments complémentaires.
+   */
+  secondary: string;
+  /**
+   * La couleur du texte courant sur les fonds clairs.
+   */
+  text: string;
+  /**
+   * La couleur de fond des pages.
+   */
+  background: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "contact".
+ */
+export interface Contact {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  /**
+   * Affichée comme lien cliquable. Un clic ouvre le logiciel de messagerie du visiteur.
+   */
+  email?: string | null;
+  /**
+   * Affiché comme lien cliquable. Sur mobile, un clic lance l’appel.
+   */
+  phone?: string | null;
+  /**
+   * L’adresse où l’on peut vous rendre visite, affichée sur la page de contact.
+   */
+  address?: {
+    /**
+     * Numéro et nom de rue. Ex. : 12 rue des Fleurs.
+     */
+    street?: string | null;
+    postalCode?: string | null;
+    city?: string | null;
+  };
+  /**
+   * Affichés dans le bloc « Contact » d’une page, par exemple « Appelez-nous » ou « Écrivez-nous ».
+   */
+  ctaButtons?:
+    | {
+        label: string;
+        /**
+         * Ce que fait le bouton. « Appeler » et « Écrire » utilisent le téléphone et l’e-mail ci-dessus.
+         */
+        action: 'phone' | 'email' | 'page';
+        /**
+         * La page vers laquelle le bouton mène.
+         */
+        page?: (number | null) | Page;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "horaires".
+ */
+export interface Horaire {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  /**
+   * Pour chaque jour, indiquez « fermé » ou une ou plusieurs plages horaires. Une pause déjeuner se traduit par deux plages.
+   */
+  week?:
+    | {
+        day: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
+        closed?: boolean | null;
+        /**
+         * Ex. : de 09:00 à 12:00, puis de 14:00 à 18:00.
+         */
+        slots?:
+          | {
+              from: string;
+              to: string;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "reseaux".
+ */
+export interface Reseau {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  /**
+   * Affichés dans le pied de page. Laissez vide les réseaux que vous n’utilisez pas.
+   */
+  links?:
+    | {
+        platform: 'facebook' | 'instagram' | 'linkedin' | 'x' | 'youtube' | 'tiktok' | 'other';
+        /**
+         * L’adresse complète, par exemple https://facebook.com/votre-page.
+         */
+        url: string;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "menu".
+ */
+export interface Menu {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  /**
+   * Les liens du menu, dans l’ordre d’affichage. Glissez-déposez pour réordonner.
+   */
+  items?:
+    | {
+        /**
+         * La page ouverte par cette entrée du menu.
+         */
+        page: number | Page;
+        /**
+         * Par défaut, le titre de la page est utilisé. Renseignez pour afficher un texte plus court.
+         */
+        label?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "pied-de-page".
+ */
+export interface PiedDePage {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  /**
+   * Chaque colonne affiche un titre et une liste de liens en bas de chaque page.
+   */
+  columns?:
+    | {
+        title: string;
+        links?:
+          | {
+              /**
+               * La page ouverte par ce lien.
+               */
+              page: number | Page;
+              /**
+               * Par défaut, le titre de la page est utilisé.
+               */
+              label?: string | null;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Affichée tout en bas. Laissez vide pour afficher automatiquement « © année + nom de l’entreprise ».
+   */
+  copyright?: string | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -699,6 +972,38 @@ export interface PayloadLockedDocument {
         value: number | User;
       } | null)
     | ({
+        relationTo: 'tenants';
+        value: number | Tenant;
+      } | null)
+    | ({
+        relationTo: 'identite';
+        value: number | Identite;
+      } | null)
+    | ({
+        relationTo: 'couleurs';
+        value: number | Couleur;
+      } | null)
+    | ({
+        relationTo: 'contact';
+        value: number | Contact;
+      } | null)
+    | ({
+        relationTo: 'horaires';
+        value: number | Horaire;
+      } | null)
+    | ({
+        relationTo: 'reseaux';
+        value: number | Reseau;
+      } | null)
+    | ({
+        relationTo: 'menu';
+        value: number | Menu;
+      } | null)
+    | ({
+        relationTo: 'pied-de-page';
+        value: number | PiedDePage;
+      } | null)
+    | ({
         relationTo: 'payload-folders';
         value: number | FolderInterface;
       } | null);
@@ -749,6 +1054,7 @@ export interface PayloadMigration {
  * via the `definition` "pages_select".
  */
 export interface PagesSelect<T extends boolean = true> {
+  tenant?: T;
   publishedAt?: T;
   title?: T;
   slug?: T;
@@ -855,6 +1161,7 @@ export interface PagesSelect<T extends boolean = true> {
  * via the `definition` "actualites_select".
  */
 export interface ActualitesSelect<T extends boolean = true> {
+  tenant?: T;
   publishedAt?: T;
   title?: T;
   slug?: T;
@@ -878,6 +1185,7 @@ export interface ActualitesSelect<T extends boolean = true> {
  * via the `definition` "categories_select".
  */
 export interface CategoriesSelect<T extends boolean = true> {
+  tenant?: T;
   name?: T;
   slug?: T;
   updatedAt?: T;
@@ -888,6 +1196,7 @@ export interface CategoriesSelect<T extends boolean = true> {
  * via the `definition` "legal-pages_select".
  */
 export interface LegalPagesSelect<T extends boolean = true> {
+  tenant?: T;
   publishedAt?: T;
   type?: T;
   title?: T;
@@ -902,6 +1211,7 @@ export interface LegalPagesSelect<T extends boolean = true> {
  * via the `definition` "media_select".
  */
 export interface MediaSelect<T extends boolean = true> {
+  tenant?: T;
   alt?: T;
   caption?: T;
   tags?: T;
@@ -967,6 +1277,7 @@ export interface MediaSelect<T extends boolean = true> {
  * via the `definition` "messages_select".
  */
 export interface MessagesSelect<T extends boolean = true> {
+  tenant?: T;
   read?: T;
   name?: T;
   email?: T;
@@ -987,6 +1298,12 @@ export interface UsersSelect<T extends boolean = true> {
   twoFactorEnabled?: T;
   twoFactorSecret?: T;
   twoFactorBackupCodes?: T;
+  tenants?:
+    | T
+    | {
+        tenant?: T;
+        id?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -1003,6 +1320,157 @@ export interface UsersSelect<T extends boolean = true> {
         createdAt?: T;
         expiresAt?: T;
       };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tenants_select".
+ */
+export interface TenantsSelect<T extends boolean = true> {
+  name?: T;
+  slug?: T;
+  status?: T;
+  publicDomain?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "identite_select".
+ */
+export interface IdentiteSelect<T extends boolean = true> {
+  tenant?: T;
+  companyName?: T;
+  slogan?: T;
+  logo?: T;
+  activityDescription?: T;
+  legalName?: T;
+  siret?: T;
+  address?:
+    | T
+    | {
+        street?: T;
+        postalCode?: T;
+        city?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "couleurs_select".
+ */
+export interface CouleursSelect<T extends boolean = true> {
+  tenant?: T;
+  primary?: T;
+  secondary?: T;
+  text?: T;
+  background?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "contact_select".
+ */
+export interface ContactSelect<T extends boolean = true> {
+  tenant?: T;
+  email?: T;
+  phone?: T;
+  address?:
+    | T
+    | {
+        street?: T;
+        postalCode?: T;
+        city?: T;
+      };
+  ctaButtons?:
+    | T
+    | {
+        label?: T;
+        action?: T;
+        page?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "horaires_select".
+ */
+export interface HorairesSelect<T extends boolean = true> {
+  tenant?: T;
+  week?:
+    | T
+    | {
+        day?: T;
+        closed?: T;
+        slots?:
+          | T
+          | {
+              from?: T;
+              to?: T;
+              id?: T;
+            };
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "reseaux_select".
+ */
+export interface ReseauxSelect<T extends boolean = true> {
+  tenant?: T;
+  links?:
+    | T
+    | {
+        platform?: T;
+        url?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "menu_select".
+ */
+export interface MenuSelect<T extends boolean = true> {
+  tenant?: T;
+  items?:
+    | T
+    | {
+        page?: T;
+        label?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "pied-de-page_select".
+ */
+export interface PiedDePageSelect<T extends boolean = true> {
+  tenant?: T;
+  columns?:
+    | T
+    | {
+        title?: T;
+        links?:
+          | T
+          | {
+              page?: T;
+              label?: T;
+              id?: T;
+            };
+        id?: T;
+      };
+  copyright?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1057,231 +1525,6 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   createdAt?: T;
 }
 /**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "identite".
- */
-export interface Identite {
-  id: number;
-  /**
-   * Apparaît en haut du site et dans l’onglet du navigateur.
-   */
-  companyName: string;
-  /**
-   * Une phrase courte affichée sous le nom, dans l’en-tête.
-   */
-  slogan?: string | null;
-  /**
-   * Affiché dans l’en-tête du site. Une description de l’image vous sera demandée à l’envoi.
-   */
-  logo?: (number | null) | Media;
-  /**
-   * Présente votre activité en quelques phrases. Sert aussi de description par défaut dans les moteurs de recherche.
-   */
-  activityDescription?: string | null;
-  /**
-   * La dénomination officielle de l’entreprise, reprise dans les mentions légales.
-   */
-  legalName?: string | null;
-  /**
-   * Votre numéro SIRET (14 chiffres). Apparaît dans les mentions légales.
-   */
-  siret?: string | null;
-  /**
-   * Utilisée pour la fiche établissement affichée aux moteurs de recherche.
-   */
-  address?: {
-    /**
-     * Numéro et nom de rue. Ex. : 12 rue des Fleurs.
-     */
-    street?: string | null;
-    postalCode?: string | null;
-    city?: string | null;
-  };
-  updatedAt?: string | null;
-  createdAt?: string | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "couleurs".
- */
-export interface Couleur {
-  id: number;
-  /**
-   * Boutons, liens et éléments mis en avant.
-   */
-  primary: string;
-  /**
-   * Accents et éléments complémentaires.
-   */
-  secondary: string;
-  /**
-   * La couleur du texte courant sur les fonds clairs.
-   */
-  text: string;
-  /**
-   * La couleur de fond des pages.
-   */
-  background: string;
-  updatedAt?: string | null;
-  createdAt?: string | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "contact".
- */
-export interface Contact {
-  id: number;
-  /**
-   * Affichée comme lien cliquable. Un clic ouvre le logiciel de messagerie du visiteur.
-   */
-  email?: string | null;
-  /**
-   * Affiché comme lien cliquable. Sur mobile, un clic lance l’appel.
-   */
-  phone?: string | null;
-  /**
-   * L’adresse où l’on peut vous rendre visite, affichée sur la page de contact.
-   */
-  address?: {
-    /**
-     * Numéro et nom de rue. Ex. : 12 rue des Fleurs.
-     */
-    street?: string | null;
-    postalCode?: string | null;
-    city?: string | null;
-  };
-  /**
-   * Affichés dans le bloc « Contact » d’une page, par exemple « Appelez-nous » ou « Écrivez-nous ».
-   */
-  ctaButtons?:
-    | {
-        label: string;
-        /**
-         * Ce que fait le bouton. « Appeler » et « Écrire » utilisent le téléphone et l’e-mail ci-dessus.
-         */
-        action: 'phone' | 'email' | 'page';
-        /**
-         * La page vers laquelle le bouton mène.
-         */
-        page?: (number | null) | Page;
-        id?: string | null;
-      }[]
-    | null;
-  updatedAt?: string | null;
-  createdAt?: string | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "horaires".
- */
-export interface Horaire {
-  id: number;
-  /**
-   * Pour chaque jour, indiquez « fermé » ou une ou plusieurs plages horaires. Une pause déjeuner se traduit par deux plages.
-   */
-  week?:
-    | {
-        day: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
-        closed?: boolean | null;
-        /**
-         * Ex. : de 09:00 à 12:00, puis de 14:00 à 18:00.
-         */
-        slots?:
-          | {
-              from: string;
-              to: string;
-              id?: string | null;
-            }[]
-          | null;
-        id?: string | null;
-      }[]
-    | null;
-  updatedAt?: string | null;
-  createdAt?: string | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "reseaux".
- */
-export interface Reseau {
-  id: number;
-  /**
-   * Affichés dans le pied de page. Laissez vide les réseaux que vous n’utilisez pas.
-   */
-  links?:
-    | {
-        platform: 'facebook' | 'instagram' | 'linkedin' | 'x' | 'youtube' | 'tiktok' | 'other';
-        /**
-         * L’adresse complète, par exemple https://facebook.com/votre-page.
-         */
-        url: string;
-        id?: string | null;
-      }[]
-    | null;
-  updatedAt?: string | null;
-  createdAt?: string | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "menu".
- */
-export interface Menu {
-  id: number;
-  /**
-   * Les liens du menu, dans l’ordre d’affichage. Glissez-déposez pour réordonner.
-   */
-  items?:
-    | {
-        /**
-         * La page ouverte par cette entrée du menu.
-         */
-        page: number | Page;
-        /**
-         * Par défaut, le titre de la page est utilisé. Renseignez pour afficher un texte plus court.
-         */
-        label?: string | null;
-        id?: string | null;
-      }[]
-    | null;
-  updatedAt?: string | null;
-  createdAt?: string | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "pied-de-page".
- */
-export interface PiedDePage {
-  id: number;
-  /**
-   * Chaque colonne affiche un titre et une liste de liens en bas de chaque page.
-   */
-  columns?:
-    | {
-        title: string;
-        links?:
-          | {
-              /**
-               * La page ouverte par ce lien.
-               */
-              page: number | Page;
-              /**
-               * Par défaut, le titre de la page est utilisé.
-               */
-              label?: string | null;
-              id?: string | null;
-            }[]
-          | null;
-        id?: string | null;
-      }[]
-    | null;
-  /**
-   * Affichée tout en bas. Laissez vide pour afficher automatiquement « © année + nom de l’entreprise ».
-   */
-  copyright?: string | null;
-  updatedAt?: string | null;
-  createdAt?: string | null;
-}
-/**
  * Sauvegardez votre site et restaurez-le en cas de besoin.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1306,145 +1549,6 @@ export interface Diagnostic {
   id: number;
   updatedAt?: string | null;
   createdAt?: string | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "identite_select".
- */
-export interface IdentiteSelect<T extends boolean = true> {
-  companyName?: T;
-  slogan?: T;
-  logo?: T;
-  activityDescription?: T;
-  legalName?: T;
-  siret?: T;
-  address?:
-    | T
-    | {
-        street?: T;
-        postalCode?: T;
-        city?: T;
-      };
-  updatedAt?: T;
-  createdAt?: T;
-  globalType?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "couleurs_select".
- */
-export interface CouleursSelect<T extends boolean = true> {
-  primary?: T;
-  secondary?: T;
-  text?: T;
-  background?: T;
-  updatedAt?: T;
-  createdAt?: T;
-  globalType?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "contact_select".
- */
-export interface ContactSelect<T extends boolean = true> {
-  email?: T;
-  phone?: T;
-  address?:
-    | T
-    | {
-        street?: T;
-        postalCode?: T;
-        city?: T;
-      };
-  ctaButtons?:
-    | T
-    | {
-        label?: T;
-        action?: T;
-        page?: T;
-        id?: T;
-      };
-  updatedAt?: T;
-  createdAt?: T;
-  globalType?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "horaires_select".
- */
-export interface HorairesSelect<T extends boolean = true> {
-  week?:
-    | T
-    | {
-        day?: T;
-        closed?: T;
-        slots?:
-          | T
-          | {
-              from?: T;
-              to?: T;
-              id?: T;
-            };
-        id?: T;
-      };
-  updatedAt?: T;
-  createdAt?: T;
-  globalType?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "reseaux_select".
- */
-export interface ReseauxSelect<T extends boolean = true> {
-  links?:
-    | T
-    | {
-        platform?: T;
-        url?: T;
-        id?: T;
-      };
-  updatedAt?: T;
-  createdAt?: T;
-  globalType?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "menu_select".
- */
-export interface MenuSelect<T extends boolean = true> {
-  items?:
-    | T
-    | {
-        page?: T;
-        label?: T;
-        id?: T;
-      };
-  updatedAt?: T;
-  createdAt?: T;
-  globalType?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "pied-de-page_select".
- */
-export interface PiedDePageSelect<T extends boolean = true> {
-  columns?:
-    | T
-    | {
-        title?: T;
-        links?:
-          | T
-          | {
-              page?: T;
-              label?: T;
-              id?: T;
-            };
-        id?: T;
-      };
-  copyright?: T;
-  updatedAt?: T;
-  createdAt?: T;
-  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

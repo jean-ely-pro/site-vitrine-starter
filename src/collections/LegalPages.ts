@@ -8,6 +8,7 @@ import { LEGAL_TYPE_OPTIONS } from '../lib/legalTemplates'
 import { applyLegalTemplate } from './hooks/applyLegalTemplate'
 import { revalidateLegal, revalidateLegalDelete } from './hooks/revalidateLegal'
 import { stampPublishedAt } from './hooks/stampPublishedAt'
+import { tenantReadPublished, tenantWrite } from '../lib/tenantAccess'
 
 /**
  * Legal pages (legal notice, privacy policy, terms). Choosing a type on creation
@@ -32,14 +33,12 @@ export const LegalPages: CollectionConfig = {
     maxPerDoc: 10,
   },
   access: {
-    read: ({ req }) => {
-      if (req.user) return true
-      return { _status: { equals: 'published' } }
-    },
-    create: ({ req }) => Boolean(req.user),
-    update: ({ req }) => Boolean(req.user),
-    delete: ({ req }) => Boolean(req.user),
+    read: tenantReadPublished,
+    create: tenantWrite,
+    update: tenantWrite,
+    delete: tenantWrite,
   },
+  indexes: [{ fields: ['tenant', 'slug'], unique: true }],
   hooks: {
     beforeChange: [applyLegalTemplate, stampPublishedAt],
     afterChange: [revalidateLegal],

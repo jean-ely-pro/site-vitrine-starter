@@ -3,6 +3,7 @@ import { fileURLToPath } from 'url'
 
 import { postgresAdapter } from '@payloadcms/db-postgres'
 import { nodemailerAdapter } from '@payloadcms/email-nodemailer'
+import { multiTenantPlugin } from '@payloadcms/plugin-multi-tenant'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { fr } from '@payloadcms/translations/languages/fr'
 import { buildConfig } from 'payload'
@@ -14,7 +15,10 @@ import { LegalPages } from './collections/LegalPages'
 import { Media } from './collections/Media'
 import { Messages } from './collections/Messages'
 import { Pages } from './collections/Pages'
+import { Tenants } from './collections/Tenants'
 import { Users } from './collections/Users'
+import { tenantSingleton } from './lib/tenantSingleton'
+import { isSuperAdmin } from './lib/tenantAccess'
 import { migrations } from './migrations'
 import { Contact } from './globals/Contact'
 import { Couleurs } from './globals/Couleurs'
@@ -30,6 +34,15 @@ import { diagnosticEndpoint } from './endpoints/diagnostic'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
+
+/**
+ * The client-owned settings sections. Each is stored once per tenant.
+ *
+ * Listed in one place because the same list drives both the collections built
+ * from them and the plugin configuration below: a section added to one and not
+ * the other would silently escape tenant scoping.
+ */
+const TENANT_SETTINGS = [Identite, Couleurs, Contact, Horaires, Reseaux, Menu, PiedDePage]
 
 // Origins allowed to call the API cross-origin. In the static model the public
 // site lives on the client's host and its contact form posts here, so that
@@ -78,8 +91,44 @@ export default buildConfig({
     supportedLanguages: { fr },
     fallbackLanguage: 'fr',
   },
-  collections: [Pages, Actualites, Categories, LegalPages, Media, Messages, Users],
-  globals: [Identite, Couleurs, Contact, Horaires, Reseaux, Menu, PiedDePage, Sauvegardes, Diagnostic],
+  collections: [
+    Pages,
+    Actualites,
+    Categories,
+    LegalPages,
+    Media,
+    Messages,
+    Users,
+    Tenants,
+    // A Payload global holds one document for the whole database, which
+    // mutualised would give every client the same identity, colours and
+    // opening hours. These seven become one document per tenant, reusing their
+    // existing field definitions untouched.
+    ...TENANT_SETTINGS.map(tenantSingleton),
+  ],
+  // Sauvegardes and Diagnostic stay true globals: they describe the
+  // installation itself — backup schedule, health of the server — not any one
+  // client's site.
+  globals: [Sauvegardes, Diagnostic],
+  plugins: [
+    multiTenantPlugin({
+      tenantsSlug: 'tenants',
+      tenantSelectorLabel: 'Client actif',
+      // Only the agency switches between clients; everyone else is pinned to
+      // the tenants attached to their account.
+      userHasAccessToAllTenants: (user) => isSuperAdmin(user),
+      collections: {
+        pages: {},
+        actualites: {},
+        categories: {},
+        'legal-pages': {},
+        media: {},
+        messages: {},
+        // One settings document per client, enforced by the plugin.
+        ...Object.fromEntries(TENANT_SETTINGS.map((g) => [g.slug, { isGlobal: true }])),
+      },
+    }),
+  ],
   // The client's static site posts its contact form here from another origin.
   cors: corsOrigins,
   endpoints: [...backupEndpoints, diagnosticEndpoint],

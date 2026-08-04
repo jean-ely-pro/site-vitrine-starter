@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 
 import { contactEndpoint } from './endpoints/contact'
+import { tenantRead, tenantWrite } from '../lib/tenantAccess'
 
 /**
  * Contact-form submissions. The public never writes here directly: create is
@@ -25,12 +26,15 @@ export const Messages: CollectionConfig = {
     },
   },
   access: {
-    // Messages are private to the site's staff.
-    read: ({ req }) => Boolean(req.user),
-    // No public writes; submissions come only through the /contact endpoint.
+    // Messages carry visitors' names and e-mail addresses: private to the
+    // staff of the client that received them, and to nobody else. This is the
+    // collection where a cross-tenant leak would be a personal-data breach.
+    read: tenantRead,
+    // No public writes; submissions come only through the /contact endpoint,
+    // which sets the tenant server-side from the requested slug.
     create: () => false,
-    update: ({ req }) => Boolean(req.user),
-    delete: ({ req }) => Boolean(req.user),
+    update: tenantWrite,
+    delete: tenantWrite,
   },
   endpoints: [contactEndpoint],
   fields: [

@@ -15,6 +15,7 @@ import { slugField } from '../fields/slug'
 import { PAGE_TEMPLATE_OPTIONS } from '../lib/pageTemplates'
 import { applyTemplate } from './hooks/applyTemplate'
 import { revalidatePage, revalidatePageDelete } from './hooks/revalidatePage'
+import { tenantReadPublished, tenantWrite } from '../lib/tenantAccess'
 
 /**
  * Public pages. The owner builds a page from predefined blocks (no free-form
@@ -41,15 +42,16 @@ export const Pages: CollectionConfig = {
     maxPerDoc: 10,
   },
   access: {
-    // The public site only sees published pages; signed-in staff see drafts too.
-    read: ({ req }) => {
-      if (req.user) return true
-      return { _status: { equals: 'published' } }
-    },
-    create: ({ req }) => Boolean(req.user),
-    update: ({ req }) => Boolean(req.user),
-    delete: ({ req }) => Boolean(req.user),
+    // The public site only sees published pages; signed-in staff see drafts too,
+    // but only for the clients they belong to.
+    read: tenantReadPublished,
+    create: tenantWrite,
+    update: tenantWrite,
+    delete: tenantWrite,
   },
+  // Two clients may both want a page at /contact, so the slug is unique per
+  // tenant rather than across the whole database.
+  indexes: [{ fields: ['tenant', 'slug'], unique: true }],
   hooks: {
     beforeChange: [applyTemplate, stampPublishedAt],
     afterChange: [revalidatePage],

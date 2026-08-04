@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 
 import { slugField } from '../fields/slug'
+import { tenantRead, tenantWrite } from '../lib/tenantAccess'
 
 /**
  * News categories, managed by the client. Kept minimal — a name and an
@@ -19,11 +20,14 @@ export const Categories: CollectionConfig = {
     description: 'Les rubriques de vos actualités (ex. « Événements », « Nouveautés »).',
   },
   access: {
-    read: () => true,
-    create: ({ req }) => Boolean(req.user),
-    update: ({ req }) => Boolean(req.user),
-    delete: ({ req }) => Boolean(req.user),
+    // Was public: a category list gave nothing away with one database per
+    // client. Mutualised it would name every client's editorial structure.
+    read: tenantRead,
+    create: tenantWrite,
+    update: tenantWrite,
+    delete: tenantWrite,
   },
+  indexes: [{ fields: ['tenant', 'slug'], unique: true }],
   fields: [
     {
       name: 'name',
