@@ -31,6 +31,8 @@ export const tenantSlug = async (): Promise<string> => {
 // clients from one request to the next, and a single slot would be refilled on
 // every switch — one extra query per page rather than one per client.
 const cached = new Map<string, number | string>()
+// Même mise en cache pour l'adresse publique, lue à chaque page rendue.
+const domains = new Map<string, string | null>()
 
 /**
  * Resolve the configured slug to a tenant id.
@@ -71,7 +73,38 @@ export const currentTenantWhere = async (payload: Payload): Promise<Where> => ({
   tenant: { equals: await currentTenantId(payload) },
 })
 
+/**
+ * The public address of the client being rendered, from their tenant record.
+ *
+ * `SERVER_URL` names one site, which is right for a dedicated instance. A
+ * mutualised one serves clients that each have their own domain: using the
+ * shared value would make every published site advertise the platform's own
+ * sitemap — the back-office address, which no visitor can reach.
+ *
+ * Returns null when nothing is recorded, so the caller keeps its own fallback
+ * rather than inventing an address.
+ */
+export const currentTenantDomain = async (payload: Payload): Promise<string | null> => {
+  const slug = await tenantSlug()
+  if (!slug) return null
+  const cachedDomain = domains.get(slug)
+  if (cachedDomain !== undefined) return cachedDomain
+
+  const result = await payload.find({
+    collection: 'tenants',
+    where: { slug: { equals: slug } },
+    limit: 1,
+    depth: 0,
+    overrideAccess: true,
+  })
+  const raw = (result.docs[0] as { publicDomain?: string } | undefined)?.publicDomain?.trim()
+  const domain = raw ? (/^https?:\/\//i.test(raw) ? raw : `https://${raw}`) : null
+  domains.set(slug, domain)
+  return domain
+}
+
 /** Test seam: forget the resolved tenants. */
 export const resetTenantCache = (): void => {
   cached.clear()
+  domains.clear()
 }

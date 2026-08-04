@@ -12,7 +12,8 @@ import type {
 } from '../payload-types'
 import type { Where } from 'payload'
 import { getPayloadClient } from './getPayload'
-import { currentTenantWhere } from './currentTenant'
+import { currentTenantDomain, currentTenantWhere } from './currentTenant'
+import { serverUrl } from './constants'
 
 /**
  * Site-wide data needed on every public page: identity, colours, navigation,
@@ -154,4 +155,24 @@ export const getPublishedArticle = async (slug: string): Promise<Actualite | nul
     limit: 1,
   })
   return result.docs[0] ?? null
+}
+
+/**
+ * The public address of the site being rendered.
+ *
+ * Prefers the client's own domain, recorded on their tenant, and falls back to
+ * `SERVER_URL`. On a dedicated instance nothing changes — no tenant domain is
+ * set, so the environment wins. On a mutualised one, `SERVER_URL` is the
+ * platform's own back-office address: using it would make every published site
+ * advertise a sitemap that no visitor can reach.
+ */
+export const publicSiteUrl = async (): Promise<string> => {
+  try {
+    const payload = await getPayloadClient()
+    const domain = await currentTenantDomain(payload)
+    if (domain) return domain
+  } catch {
+    // Base injoignable (construction de l'image) : le repli suffit.
+  }
+  return serverUrl()
 }
