@@ -111,6 +111,29 @@ export const tenantWrite: Access = ({ req }) => {
   return scopeToTenants(req.user)
 }
 
+/**
+ * Settings a client owns but an editor does not touch: identity, colours,
+ * contact details, opening hours, social links.
+ *
+ * An editor writes content; changing the company name or the brand colour is
+ * the owner's decision. Still scoped to the tenant, so a client's administrator
+ * only reaches their own.
+ */
+export const tenantSettingsWrite: Access = ({ req }) => {
+  if (!isTenantAdmin(req.user)) return false
+  return scopeToTenants(req.user)
+}
+
+/**
+ * Hide a section from an editor's navigation.
+ *
+ * Cosmetic on its own — `admin.hidden` removes the entry from the sidebar but
+ * not the underlying route or API. It always accompanies an access rule that
+ * does the actual refusing; hiding alone would be a door left unlocked with the
+ * sign taken down.
+ */
+export const hiddenFromEditors = ({ user }: { user?: unknown }): boolean => !isTenantAdmin(user)
+
 /** Reserved to the agency: tenant records, and anything that spans clients. */
 export const superAdminOnly: Access = ({ req }) => isSuperAdmin(req.user)
 

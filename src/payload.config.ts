@@ -44,6 +44,14 @@ const dirname = path.dirname(filename)
  */
 const TENANT_SETTINGS = [Identite, Couleurs, Contact, Horaires, Reseaux, Menu, PiedDePage]
 
+/**
+ * Les réglages qui appartiennent au gérant, pas à un rédacteur : l'identité de
+ * l'entreprise, ses couleurs, ses coordonnées. Menu et pied de page en sont
+ * exclus — un éditeur qui crée une page doit pouvoir l'y rattacher, sans quoi
+ * sa page reste inatteignable et chaque publication demande un aller-retour.
+ */
+const OWNER_ONLY_SETTINGS = new Set([Identite, Couleurs, Contact, Horaires, Reseaux])
+
 // Origins allowed to call the API cross-origin. In the static model the public
 // site lives on the client's host and its contact form posts here, so that
 // host's origin must be listed (comma-separated in PUBLIC_SITE_ORIGINS).
@@ -104,7 +112,7 @@ export default buildConfig({
     // mutualised would give every client the same identity, colours and
     // opening hours. These seven become one document per tenant, reusing their
     // existing field definitions untouched.
-    ...TENANT_SETTINGS.map(tenantSingleton),
+    ...TENANT_SETTINGS.map((g) => tenantSingleton(g, { ownerOnly: OWNER_ONLY_SETTINGS.has(g) })),
   ],
   // Sauvegardes and Diagnostic stay true globals: they describe the
   // installation itself — backup schedule, health of the server — not any one

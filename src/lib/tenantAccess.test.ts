@@ -4,7 +4,9 @@ import {
   isSuperAdmin,
   isTenantAdmin,
   scopeToTenants,
+  hiddenFromEditors,
   superAdminOnly,
+  tenantSettingsWrite,
   tenantIdsForUser,
   tenantRead,
   tenantReadPublished,
@@ -125,5 +127,38 @@ describe('réservé à l’agence', () => {
     expect(superAdminOnly(req(boulanger))).toBe(false)
     expect(superAdminOnly(req(boulangerEditor))).toBe(false)
     expect(superAdminOnly(req(null))).toBe(false)
+  })
+})
+
+describe('périmètre d’un éditeur', () => {
+  it('ne peut pas modifier les réglages du site', () => {
+    // Le nom de l'entreprise et la couleur de marque appartiennent au gérant :
+    // un rédacteur écrit du contenu, il ne redéfinit pas l'identité.
+    expect(tenantSettingsWrite(req(boulangerEditor))).toBe(false)
+    // Le gérant, lui, y accède — borné à son propre client.
+    expect(tenantSettingsWrite(req(boulanger))).toEqual({ tenant: { in: [10] } })
+    expect(tenantSettingsWrite(req(superAdmin))).toBe(true)
+  })
+
+  it('conserve l’écriture des contenus', () => {
+    // Le masquage ne doit pas déborder : un éditeur qui ne peut plus rédiger
+    // n'a plus de raison d'exister.
+    expect(tenantWrite(req(boulangerEditor))).toEqual({ tenant: { in: [10] } })
+  })
+
+  it('est masqué de la navigation, gérant et agence non', () => {
+    expect(hiddenFromEditors({ user: boulangerEditor })).toBe(true)
+    expect(hiddenFromEditors({ user: boulanger })).toBe(false)
+    expect(hiddenFromEditors({ user: superAdmin })).toBe(false)
+    // Un visiteur sans compte n'atteint pas l'admin, mais la valeur doit rester
+    // défensive : masqué par défaut.
+    expect(hiddenFromEditors({ user: null })).toBe(true)
+  })
+
+  it('le masquage ne remplace jamais l’access', () => {
+    // `admin.hidden` retire l'entrée de la barre latérale, pas la route ni
+    // l'API : c'est l'access qui refuse, le masquage ne fait qu'accompagner.
+    expect(hiddenFromEditors({ user: boulangerEditor })).toBe(true)
+    expect(tenantSettingsWrite(req(boulangerEditor))).toBe(false)
   })
 })

@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 
-import { superAdminOnly } from '../lib/tenantAccess'
+import { isSuperAdmin, superAdminOnly } from '../lib/tenantAccess'
 
 /**
  * The clients hosted on this installation.
@@ -24,6 +24,9 @@ export const Tenants: CollectionConfig = {
     useAsTitle: 'name',
     defaultColumns: ['name', 'slug', 'status'],
     description: 'Les sites hébergés sur cette installation. Réservé à l’agence.',
+    // Invisible à tout ce qui n'est pas l'agence : la liste des clients
+    // n'appartient à aucun d'eux. L'access `read` le refuse déjà.
+    hidden: ({ user }) => !isSuperAdmin(user),
   },
   access: {
     read: superAdminOnly,

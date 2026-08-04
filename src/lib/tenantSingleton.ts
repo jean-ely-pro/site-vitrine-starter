@@ -1,6 +1,6 @@
 import type { CollectionConfig, GlobalConfig } from 'payload'
 
-import { tenantRead, tenantWrite } from './tenantAccess'
+import { hiddenFromEditors, tenantRead, tenantSettingsWrite, tenantWrite } from './tenantAccess'
 
 /**
  * Turn an existing Payload global into one document per tenant.
@@ -16,7 +16,10 @@ import { tenantRead, tenantWrite } from './tenantAccess'
  * exposes every client's settings to any signed-in user. Access is scoped to
  * the caller's tenants here.
  */
-export const tenantSingleton = (definition: GlobalConfig): CollectionConfig => ({
+export const tenantSingleton = (
+  definition: GlobalConfig,
+  { ownerOnly = false }: { ownerOnly?: boolean } = {},
+): CollectionConfig => ({
   slug: definition.slug,
   labels: {
     singular: typeof definition.label === 'string' ? definition.label : definition.slug,
@@ -25,13 +28,16 @@ export const tenantSingleton = (definition: GlobalConfig): CollectionConfig => (
   admin: {
     group: definition.admin?.group,
     description: definition.admin?.description,
+    // Masqué de la barre latérale d'un éditeur — l'accès ci-dessous est ce qui
+    // refuse réellement.
+    ...(ownerOnly ? { hidden: hiddenFromEditors } : {}),
   },
   access: {
     read: tenantRead,
     // Creation is the plugin's business: it makes the row when a tenant first
     // opens the section. Scoped like the rest so a client cannot seed another's.
-    create: tenantWrite,
-    update: tenantWrite,
+    create: ownerOnly ? tenantSettingsWrite : tenantWrite,
+    update: ownerOnly ? tenantSettingsWrite : tenantWrite,
     // A settings document is not deletable: the site would lose its identity or
     // its colours with no way back through the admin.
     delete: () => false,

@@ -1,6 +1,12 @@
 import type { CollectionConfig, Where } from 'payload'
 
-import { isSuperAdmin, scopeToTenants, superAdminOnlyField } from '../lib/tenantAccess'
+import {
+  hiddenFromEditors,
+  isSuperAdmin,
+  isTenantAdmin,
+  scopeToTenants,
+  superAdminOnlyField,
+} from '../lib/tenantAccess'
 import { guardTenantEscalation } from './hooks/accessGuards'
 
 import { blockDisabledLogin, guardLastAdmin, preventLastAdminDelete } from './hooks/accessGuards'
@@ -27,6 +33,9 @@ export const Users: CollectionConfig = {
     useAsTitle: 'email',
     defaultColumns: ['email', 'role', 'twoFactorEnabled', 'disabled'],
     group: 'Administration',
+    // Un éditeur n'a pas à voir l'annuaire des comptes ; l'access `read`
+    // ci-dessous est ce qui le refuse réellement.
+    hidden: hiddenFromEditors,
     description:
       'Les accès à l’administration. Créez un accès pour un collaborateur, ou révoquez-le sans le supprimer.',
   },
@@ -37,12 +46,15 @@ export const Users: CollectionConfig = {
     read: ({ req }): boolean | Where => {
       if (!req.user) return false
       if (isSuperAdmin(req.user)) return true
+      // Always allow reading one's own account: otherwise a user cannot open
+      // their own profile to change a password.
       const own: Where = { id: { equals: req.user.id } }
+      // An editor sees only themselves — the list of a client's accounts, with
+      // their e-mails and roles, is the owner's business.
+      if (!isTenantAdmin(req.user)) return own
       const scope = scopeToTenants(req.user)
       if (scope === false) return own
       if (scope === true) return true
-      // Always allow reading one's own account, even before tenants are set:
-      // otherwise a user cannot open their own profile to change a password.
       return { or: [scope, own] }
     },
     create: ({ req }) => isAdmin(req),
