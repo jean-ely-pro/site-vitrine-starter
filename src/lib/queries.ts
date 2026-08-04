@@ -10,7 +10,9 @@ import type {
   PiedDePage,
   Reseau,
 } from '../payload-types'
+import type { Where } from 'payload'
 import { getPayloadClient } from './getPayload'
+import { currentTenantWhere } from './currentTenant'
 
 /**
  * Site-wide data needed on every public page: identity, colours, navigation,
@@ -27,16 +29,39 @@ export type SiteGlobals = {
   piedDePage: PiedDePage
 }
 
+/**
+ * The settings sections are now one document per client rather than Payload
+ * globals, so each is a `find` filtered on the tenant instead of a `findGlobal`.
+ * A missing section yields an empty object: a client who has not filled in their
+ * social links yet must still get a rendered site.
+ */
+const tenantSettings = async <T>(
+  payload: Awaited<ReturnType<typeof getPayloadClient>>,
+  slug: 'identite' | 'couleurs' | 'contact' | 'horaires' | 'reseaux' | 'menu' | 'pied-de-page',
+  where: Where,
+  depth = 0,
+): Promise<T> => {
+  const result = await payload.find({
+    collection: slug,
+    where,
+    limit: 1,
+    depth,
+    overrideAccess: true,
+  })
+  return (result.docs[0] ?? {}) as T
+}
+
 export const getSiteGlobals = async (): Promise<SiteGlobals> => {
   const payload = await getPayloadClient()
+  const where = await currentTenantWhere(payload)
   const [identite, couleurs, contact, horaires, reseaux, menu, piedDePage] = await Promise.all([
-    payload.findGlobal({ slug: 'identite' }),
-    payload.findGlobal({ slug: 'couleurs' }),
-    payload.findGlobal({ slug: 'contact' }),
-    payload.findGlobal({ slug: 'horaires' }),
-    payload.findGlobal({ slug: 'reseaux' }),
-    payload.findGlobal({ slug: 'menu', depth: 1 }),
-    payload.findGlobal({ slug: 'pied-de-page', depth: 1 }),
+    tenantSettings<Identite>(payload, 'identite', where),
+    tenantSettings<Couleur>(payload, 'couleurs', where),
+    tenantSettings<Contact>(payload, 'contact', where),
+    tenantSettings<Horaire>(payload, 'horaires', where),
+    tenantSettings<Reseau>(payload, 'reseaux', where),
+    tenantSettings<Menu>(payload, 'menu', where, 1),
+    tenantSettings<PiedDePage>(payload, 'pied-de-page', where, 1),
   ])
   return { identite, couleurs, contact, horaires, reseaux, menu, piedDePage }
 }
@@ -44,10 +69,11 @@ export const getSiteGlobals = async (): Promise<SiteGlobals> => {
 /** A single published page by slug, with its uploads populated. Null if none. */
 export const getPublishedPage = async (slug: string): Promise<Page | null> => {
   const payload = await getPayloadClient()
+  const tenantWhere = await currentTenantWhere(payload)
   const result = await payload.find({
     collection: 'pages',
     where: {
-      and: [{ slug: { equals: slug } }, { _status: { equals: 'published' } }],
+      and: [tenantWhere, { slug: { equals: slug } }, { _status: { equals: 'published' } }],
     },
     depth: 2,
     limit: 1,
@@ -58,9 +84,10 @@ export const getPublishedPage = async (slug: string): Promise<Page | null> => {
 /** All published pages, lightest possible projection (for menus and sitemap). */
 export const getPublishedPages = async (): Promise<Pick<Page, 'slug' | 'title' | 'updatedAt'>[]> => {
   const payload = await getPayloadClient()
+  const tenantWhere = await currentTenantWhere(payload)
   const result = await payload.find({
     collection: 'pages',
-    where: { _status: { equals: 'published' } },
+    where: { and: [tenantWhere, { _status: { equals: 'published' } }] },
     depth: 0,
     limit: 500,
     pagination: false,
@@ -72,9 +99,10 @@ export const getPublishedPages = async (): Promise<Pick<Page, 'slug' | 'title' |
 /** Published articles, newest first, with cover image and category populated. */
 export const getPublishedArticles = async (): Promise<Actualite[]> => {
   const payload = await getPayloadClient()
+  const tenantWhere = await currentTenantWhere(payload)
   const result = await payload.find({
     collection: 'actualites',
-    where: { _status: { equals: 'published' } },
+    where: { and: [tenantWhere, { _status: { equals: 'published' } }] },
     sort: '-publishedDate',
     depth: 1,
     limit: 500,
@@ -86,10 +114,11 @@ export const getPublishedArticles = async (): Promise<Actualite[]> => {
 /** A single published legal page by slug. Null if none. */
 export const getPublishedLegalPage = async (slug: string): Promise<LegalPage | null> => {
   const payload = await getPayloadClient()
+  const tenantWhere = await currentTenantWhere(payload)
   const result = await payload.find({
     collection: 'legal-pages',
     where: {
-      and: [{ slug: { equals: slug } }, { _status: { equals: 'published' } }],
+      and: [tenantWhere, { slug: { equals: slug } }, { _status: { equals: 'published' } }],
     },
     depth: 1,
     limit: 1,
@@ -100,9 +129,10 @@ export const getPublishedLegalPage = async (slug: string): Promise<LegalPage | n
 /** Published legal pages, lightest projection — for the footer legal links. */
 export const getPublishedLegalPages = async (): Promise<Pick<LegalPage, 'slug' | 'title'>[]> => {
   const payload = await getPayloadClient()
+  const tenantWhere = await currentTenantWhere(payload)
   const result = await payload.find({
     collection: 'legal-pages',
-    where: { _status: { equals: 'published' } },
+    where: { and: [tenantWhere, { _status: { equals: 'published' } }] },
     depth: 0,
     limit: 50,
     pagination: false,
@@ -114,10 +144,11 @@ export const getPublishedLegalPages = async (): Promise<Pick<LegalPage, 'slug' |
 /** A single published article by slug, with uploads populated. Null if none. */
 export const getPublishedArticle = async (slug: string): Promise<Actualite | null> => {
   const payload = await getPayloadClient()
+  const tenantWhere = await currentTenantWhere(payload)
   const result = await payload.find({
     collection: 'actualites',
     where: {
-      and: [{ slug: { equals: slug } }, { _status: { equals: 'published' } }],
+      and: [tenantWhere, { slug: { equals: slug } }, { _status: { equals: 'published' } }],
     },
     depth: 2,
     limit: 1,

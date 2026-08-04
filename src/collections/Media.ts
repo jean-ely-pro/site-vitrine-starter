@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 
 import { revalidateMedia } from './hooks/revalidateMedia'
+import { tenantRead, tenantWrite } from '../lib/tenantAccess'
 
 // Modern, well-supported format; sharp produces it for every generated size so
 // the public site serves light images whatever the owner uploads.
@@ -26,11 +27,14 @@ export const Media: CollectionConfig = {
   // Group media into folders in the admin.
   folders: true,
   access: {
-    // Public site needs to read images; only signed-in staff can manage them.
-    read: () => true,
-    create: ({ req }) => Boolean(req.user),
-    update: ({ req }) => Boolean(req.user),
-    delete: ({ req }) => Boolean(req.user),
+    // `read: () => true` was correct with one database per client — the public
+    // site must fetch images. Mutualised it would expose every client's media
+    // library to anyone, signed in or not. Anonymous callers are the static
+    // export, which names its tenant; signed-in users see their own tenants.
+    read: tenantRead,
+    create: tenantWrite,
+    update: tenantWrite,
+    delete: tenantWrite,
   },
   upload: {
     // Editing tools in the admin.

@@ -7,6 +7,7 @@ import { seoField } from '../fields/seo'
 import { slugField } from '../fields/slug'
 import { revalidateActualite, revalidateActualiteDelete } from './hooks/revalidateActualite'
 import { stampPublishedAt } from './hooks/stampPublishedAt'
+import { tenantReadPublished, tenantWrite } from '../lib/tenantAccess'
 
 /**
  * News. An article carries a title, a category, a date, a cover image, a short
@@ -33,14 +34,12 @@ export const Actualites: CollectionConfig = {
     maxPerDoc: 10,
   },
   access: {
-    read: ({ req }) => {
-      if (req.user) return true
-      return { _status: { equals: 'published' } }
-    },
-    create: ({ req }) => Boolean(req.user),
-    update: ({ req }) => Boolean(req.user),
-    delete: ({ req }) => Boolean(req.user),
+    read: tenantReadPublished,
+    create: tenantWrite,
+    update: tenantWrite,
+    delete: tenantWrite,
   },
+  indexes: [{ fields: ['tenant', 'slug'], unique: true }],
   hooks: {
     beforeChange: [stampPublishedAt],
     afterChange: [revalidateActualite],

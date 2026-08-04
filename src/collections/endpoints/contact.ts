@@ -1,5 +1,7 @@
 import type { Endpoint, PayloadRequest } from 'payload'
 
+import { currentTenantId } from '../../lib/currentTenant'
+
 // Simple per-IP rate limit, in memory. The editing server is a single long-lived
 // process, so a Map is enough; it resets on restart, which is acceptable here.
 const WINDOW_MS = 10 * 60 * 1000
@@ -68,16 +70,28 @@ export const contactEndpoint: Endpoint = {
     if (message.length > 5000) return badRequest('Votre message est trop long.')
     if (!consent) return badRequest('Merci de cocher la case de consentement pour envoyer.')
 
+    // The tenant comes from the server's configuration, never from the request
+    // body: a submitted tenant would let anyone drop messages into another
+    // client's inbox. Without it the message would be orphaned and invisible.
+    // Postgres ids are numeric; the resolver's wider type covers other adapters.
+    const tenant = Number(await currentTenantId(req.payload))
+
     await req.payload.create({
       collection: 'messages',
-      data: { name, email, message, consent: true, read: false },
+      data: { tenant, name, email, message, consent: true, read: false },
       overrideAccess: true,
     })
 
     // Notify the site owner. Best-effort: a missing e-mail setup must not fail
     // the submission.
     try {
-      const contact = await req.payload.findGlobal({ slug: 'contact' })
+      const settings = await req.payload.find({
+        collection: 'contact',
+        where: { tenant: { equals: tenant } },
+        limit: 1,
+        overrideAccess: true,
+      })
+      const contact = settings.docs[0] ?? {}
       const to = (contact as { email?: string }).email || process.env.CONTACT_NOTIFY_EMAIL
       if (to) {
         await req.payload.sendEmail({

@@ -1,7 +1,11 @@
 import type { GlobalConfig } from 'payload'
 
+// Sauvegardes et diagnostic décrivent l'installation, pas le site d'un
+// client : sur une installation mutualisée ils relèvent de l'agence seule.
+// Le super-administrateur doit y figurer, sans quoi le rôle le plus élevé
+// perdrait un accès que le rôle en dessous conserve.
 const adminOnly = ({ req }: { req: { user?: { role?: string } | null } }) =>
-  req.user?.role === 'admin'
+  req.user?.role === 'admin' || req.user?.role === 'super-admin'
 
 /**
  * Backup settings and manager. The frequency drives the automatic backups (see

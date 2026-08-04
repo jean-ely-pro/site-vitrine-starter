@@ -20,10 +20,16 @@ export const applyLegalTemplate: CollectionBeforeChangeHook = async ({ data, ope
   const type = data.type as LegalType | undefined
   if (!type) return data
 
-  const [identite, contact] = await Promise.all([
-    req.payload.findGlobal({ slug: 'identite' }),
-    req.payload.findGlobal({ slug: 'contact' }),
+  // The settings are per client now: read the ones belonging to the page being
+  // created, not a single set shared by everyone.
+  const tenant = (data as { tenant?: number | string }).tenant
+  const scope = tenant != null ? { tenant: { equals: tenant } } : undefined
+  const [identiteRes, contactRes] = await Promise.all([
+    req.payload.find({ collection: 'identite', where: scope, limit: 1, overrideAccess: true }),
+    req.payload.find({ collection: 'contact', where: scope, limit: 1, overrideAccess: true }),
   ])
+  const identite = identiteRes.docs[0] ?? {}
+  const contact = contactRes.docs[0] ?? {}
 
   const legalData: LegalData = {
     companyName: (identite as { companyName?: string }).companyName,
