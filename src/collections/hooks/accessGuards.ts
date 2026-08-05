@@ -50,6 +50,22 @@ export const blockDisabledLogin: CollectionBeforeLoginHook = ({ user }) => {
   return user
 }
 
+/** Active super-admins other than one account. */
+const countActiveSuperAdmins = async (req: PayloadRequest, excludeId?: string | number) => {
+  const result = await req.payload.count({
+    collection: 'users',
+    overrideAccess: true,
+    where: {
+      and: [
+        { role: { equals: 'super-admin' } },
+        { disabled: { not_equals: true } },
+        ...(excludeId != null ? [{ id: { not_equals: excludeId } }] : []),
+      ],
+    },
+  })
+  return result.totalDocs
+}
+
 /**
  * Never let the site end up with no one who can sign in as admin: block
  * revoking or demoting the last active administrator.
@@ -58,6 +74,36 @@ export const guardLastAdmin: CollectionBeforeChangeHook = async ({ data, origina
   if (operation !== 'update' || !originalDoc) return data
 
   const isAdminRole = (role: unknown) => role === 'admin' || role === 'super-admin'
+
+  /**
+   * Losing the last super-admin is its own kind of lock-out, and the check
+   * below does not catch it: `admin` counts as an administrator, so demoting
+   * `super-admin` → `admin` reads as no loss at all.
+   *
+   * It is one, and a total one. A super-admin's rights come from the role; an
+   * admin's come from the clients attached to their account. The first account
+   * of an installation has none — so the demotion leaves someone who can list
+   * only themselves, and cannot create the client that would restore their
+   * reach. Nothing in the interface undoes it: promoting back to `super-admin`
+   * is a right only a super-admin holds, and there is no longer one.
+   */
+  if (
+    originalDoc.role === 'super-admin' &&
+    (data.role !== undefined || data.disabled !== undefined) &&
+    (data.role !== 'super-admin' || data.disabled === true)
+  ) {
+    const otherSuperAdmins = await countActiveSuperAdmins(req, originalDoc.id)
+    if (otherSuperAdmins === 0) {
+      throw new APIError(
+        'Impossible : c’est le dernier super-administrateur actif. ' +
+          'Nommez d’abord un autre super-administrateur — sans lui, plus personne ne pourrait ' +
+          'gérer les clients ni les accès.',
+        400,
+        undefined,
+        true,
+      )
+    }
+  }
   const wasActiveAdmin = isAdminRole(originalDoc.role) && !originalDoc.disabled
   const newRole = (data.role ?? originalDoc.role) as string
   const newDisabled = (data.disabled ?? originalDoc.disabled) as boolean | undefined
@@ -115,6 +161,22 @@ export const guardTenantEscalation: CollectionBeforeChangeHook = async ({ data, 
   // Any tenant named on the new account must be one the creator owns.
   const allowed = tenantIdsForUser(req.user).map(String)
   const requested = tenantIdsForUser(data).map(String)
+
+  // An admin with no client of their own cannot attach the new account to
+  // anything, and the fallback below has nothing to copy: the account would be
+  // created attached to no client, therefore invisible to everyone including
+  // its creator. Refuse, and say what to do — the way out is a client, not
+  // another account.
+  if (allowed.length === 0 && requested.length === 0) {
+    throw new APIError(
+      'Aucun client n’est rattaché à votre compte : le nouvel accès ne serait rattaché à rien, ' +
+        'donc invisible. Demandez à l’agence de vous rattacher à un client d’abord.',
+      400,
+      undefined,
+      true,
+    )
+  }
+
   const foreign = requested.filter((id) => !allowed.includes(id))
   if (foreign.length > 0) {
     throw new APIError(

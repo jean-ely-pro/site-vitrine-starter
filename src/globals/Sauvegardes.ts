@@ -4,7 +4,7 @@ import type { GlobalConfig } from 'payload'
 // client : sur une installation mutualisée ils relèvent de l'agence seule.
 // Le super-administrateur doit y figurer, sans quoi le rôle le plus élevé
 // perdrait un accès que le rôle en dessous conserve.
-const adminOnly = ({ req }: { req: { user?: { role?: string } | null } }) =>
+const adminOnly = ({ req }: { req: { user?: { role?: string | null } | null } }) =>
   req.user?.role === 'admin' || req.user?.role === 'super-admin'
 
 /**

@@ -639,7 +639,11 @@ export interface User {
   /**
    * Le super-administrateur (agence) gère tous les clients ; l’administrateur gère les accès de son client ; l’éditeur gère uniquement les contenus.
    */
-  role: 'super-admin' | 'admin' | 'editor';
+  role?: ('super-admin' | 'admin' | 'editor') | null;
+  /**
+   * Seule l’agence peut modifier un rôle.
+   */
+  roleLecture?: string | null;
   /**
    * Coché, cette personne ne peut plus se connecter, sans perdre son compte. Décochez pour réactiver.
    */
@@ -1293,6 +1297,7 @@ export interface MessagesSelect<T extends boolean = true> {
 export interface UsersSelect<T extends boolean = true> {
   name?: T;
   role?: T;
+  roleLecture?: T;
   disabled?: T;
   passwordChangedAt?: T;
   twoFactorEnabled?: T;

@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { guardLastAdmin, guardTenantEscalation, preventLastAdminDelete } from './accessGuards'
+import {
+  guardLastAdmin,
+  guardTenantEscalation,
+  preventLastAdminDelete,
+} from './accessGuards'
 
 /**
  * Privilege escalation at account creation.
@@ -171,7 +175,11 @@ describe('dernier administrateur, par client', () => {
       operation: 'update',
       req,
     })
-    expect(queries[0].where.and[0].role.in).toContain('super-admin')
+    // Le comptage par rôle interroge `role.in` ; le garde du dernier
+    // super-admin interroge `role.equals`. On cherche le premier, sans
+    // supposer lequel des deux part en premier.
+    const parRole = queries.find((q) => q.where.and[0].role?.in)
+    expect(parRole?.where.and[0].role.in).toContain('super-admin')
   })
 
   it('protège aussi la suppression, par client', async () => {
@@ -193,5 +201,85 @@ describe('dernier administrateur, par client', () => {
       req,
     })
     expect(queries[0].overrideAccess).toBe(true)
+  })
+})
+
+/**
+ * L'enfermement vécu en conditions réelles : premier compte créé, super-admin,
+ * rattaché à aucun client. Rétrogradé en `admin`, il ne pouvait plus rien voir
+ * ni rien créer — pas même le client qui l'aurait sorti de là.
+ */
+describe('dernier super-administrateur', () => {
+  // Répond selon le rôle interrogé : le garde du dernier super-admin filtre sur
+  // `role.equals`, le comptage général sur `role.in`.
+  const compteur = (superAdmins: number, admins: number) => ({
+    payload: {
+      count: async (args: Record<string, any>) => ({
+        totalDocs: args.where.and[0].role?.equals === 'super-admin' ? superAdmins : admins,
+      }),
+      findByID: async () => ({ id: 1, role: 'super-admin', tenants: [] }),
+    },
+  })
+
+  it('refuse la rétrogradation du dernier, même vers administrateur', async () => {
+    // `admin` compte comme rôle d'administrateur : sans garde dédié, la perte
+    // passait inaperçue. Elle est pourtant totale, le compte n'ayant aucun
+    // client d'où tirer des droits.
+    await expect(
+      (guardLastAdmin as unknown as Hook)({
+        data: { role: 'admin' },
+        originalDoc: { id: 1, role: 'super-admin', disabled: false, tenants: [] },
+        operation: 'update',
+        req: compteur(0, 5),
+      }),
+    ).rejects.toThrow(/dernier super-administrateur actif/)
+  })
+
+  it('refuse aussi sa désactivation', async () => {
+    await expect(
+      (guardLastAdmin as unknown as Hook)({
+        data: { disabled: true },
+        originalDoc: { id: 1, role: 'super-admin', disabled: false, tenants: [] },
+        operation: 'update',
+        req: compteur(0, 5),
+      }),
+    ).rejects.toThrow(/dernier super-administrateur actif/)
+  })
+
+  it('laisse faire tant qu’il en reste un autre', async () => {
+    const data = await (guardLastAdmin as unknown as Hook)({
+      data: { role: 'admin' },
+      originalDoc: { id: 1, role: 'super-admin', disabled: false, tenants: [{ tenant: 10 }] },
+      operation: 'update',
+      req: compteur(1, 5),
+    })
+    expect(data.role).toBe('admin')
+  })
+
+  it('ne gêne pas les modifications sans rapport avec le rôle', async () => {
+    const data = await (guardLastAdmin as unknown as Hook)({
+      data: { email: 'nouvelle@adresse.fr' },
+      originalDoc: { id: 1, role: 'super-admin', disabled: false, tenants: [] },
+      operation: 'update',
+      req: compteur(0, 5),
+    })
+    expect(data.email).toBe('nouvelle@adresse.fr')
+  })
+})
+
+describe('création d’un accès sans client rattaché', () => {
+  it('refuse plutôt que de créer un compte orphelin', async () => {
+    // Le repli qui rattache au client du créateur n'a rien à copier : le
+    // compte naîtrait rattaché à rien, donc invisible pour tout le monde.
+    await expect(
+      (guardTenantEscalation as unknown as Hook)({
+        data: { email: 'b@exemple.fr', role: 'admin' },
+        operation: 'create',
+        req: {
+          user: { id: 1, role: 'admin', tenants: [] },
+          payload: { count: async () => ({ totalDocs: 1 }) },
+        },
+      }),
+    ).rejects.toThrow(/Aucun client n’est rattaché à votre compte/)
   })
 })
