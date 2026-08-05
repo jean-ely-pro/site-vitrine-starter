@@ -4,13 +4,14 @@ import { notFound } from 'next/navigation'
 import { LegalPageView } from '../../../components/site/LegalPageView'
 import { PageView } from '../../../components/site/PageView'
 import { TenantNotServed } from '../../../lib/currentTenant'
-import { HOME_SLUG, serverUrl } from '../../../lib/constants'
+import { HOME_SLUG } from '../../../lib/constants'
 import { buildPageMetadata } from '../../../lib/pageMetadata'
 import {
   getPublishedLegalPage,
   getPublishedPage,
   getPublishedPages,
   getSiteGlobals,
+  publicSiteUrl,
 } from '../../../lib/queries'
 
 /**
@@ -69,14 +70,14 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   }
   if (page) {
     const { identite } = await getSiteGlobals()
-    return buildPageMetadata(page, identite, serverUrl(), pathFor(slug))
+    return buildPageMetadata(page, identite, await publicSiteUrl(), pathFor(slug))
   }
 
   const legal = await getPublishedLegalPage(slug)
   if (legal) {
     return {
       title: legal.title || undefined,
-      alternates: { canonical: new URL(pathFor(slug), serverUrl()).toString() },
+      alternates: { canonical: new URL(pathFor(slug), await publicSiteUrl()).toString() },
     }
   }
 
@@ -93,7 +94,7 @@ export default async function SitePage({ params }: { params: Promise<Params> }) 
   const page = await getPublishedPage(slug)
   if (page) {
     const globals = await getSiteGlobals()
-    return <PageView page={page} globals={globals} serverUrl={serverUrl()} />
+    return <PageView page={page} globals={globals} serverUrl={await publicSiteUrl()} />
   }
 
   // Legal pages live in their own collection but share these clean URLs.
