@@ -8,8 +8,8 @@ réel.
 Ce que tu livres est du **code** : des blocs et des styles. Pas le contenu de ta
 base locale, qui ne sert qu'à voir ce que tu fais.
 
-L'installation elle-même est décrite dans le [README](../README.fr.md). Ce
-document commence là où il s'arrête.
+Installe d'abord le projet en suivant le [README](../README.fr.md) : dépendances,
+base de données, premier lancement.
 
 ---
 
@@ -74,8 +74,6 @@ Sept blocs existent : `hero`, `textImage`, `services`, `hours`,
 
 ### Un bloc a deux moitiés
 
-C'est la clé pour s'y retrouver.
-
 - sa **définition** (`src/blocks/Hero.ts`) décrit les champs que le client
   remplit dans l'admin ;
 - son **rendu** (`BlockRenderer.tsx`) décrit à quoi ça ressemble sur le site.
@@ -133,8 +131,8 @@ pnpm generate:types
 > cela, TypeScript ignore ton champ et signale une erreur sur quelque chose qui
 > existe pourtant. C'est la cause n°1 de perte de temps sur ce projet.
 
-Le `&&` n'est pas décoratif : un champ facultatif laissé vide ne doit pas
-produire un bloc vide sur le site du client.
+Garde le `&&` : sans lui, un client qui laisse le champ vide obtient « Urgence
+24h/24 : » suivi de rien.
 
 ---
 
@@ -184,8 +182,8 @@ pnpm test:a11y           # accessibilité (serveur lancé)
 Puis à l'œil : un seul `<h1>` par page, un contraste suffisant, un texte
 alternatif sur chaque image, un affichage correct sur mobile.
 
-Le produit applique ces bonnes pratiques **à la place du client** : il ne saura
-pas qu'un contraste est insuffisant. C'est ton travail, pas le sien.
+Le client ne saura pas qu'un contraste est insuffisant ou qu'une image n'a pas
+d'alternative textuelle : le produit applique ces règles à sa place.
 
 ---
 
