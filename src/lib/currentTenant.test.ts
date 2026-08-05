@@ -8,6 +8,7 @@ vi.mock('next/headers', () => ({
 
 
 import {
+  currentTenantDomain,
   currentTenantId,
   currentTenantWhere,
   resetTenantCache,
@@ -175,6 +176,46 @@ describe('client suspendu ou archivé', () => {
     const { client, calls } = payloadWith([{ id: 10, status: 'active' }])
     await currentTenantId(client)
     await currentTenantId(client)
+    expect(calls()).toBe(1)
+  })
+})
+
+describe('adresse publique du client', () => {
+  // Un client renseigne son hébergement après coup : l'adresse est souvent
+  // vide au premier rendu. Sans expiration, ce vide se figeait jusqu'au
+  // redémarrage et le site publiait le repli — l'adresse du back-office.
+  const payloadReturning = (domains: Array<string | undefined>) => {
+    let calls = 0
+    return {
+      client: {
+        find: async () => ({ docs: [{ id: 1, publicDomain: domains[calls++] }] }),
+      } as never,
+      calls: () => calls,
+    }
+  }
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('relit une adresse renseignée après le premier rendu', async () => {
+    vi.useFakeTimers()
+    process.env.TENANT_SLUG = 'demo-plombier'
+    const { client } = payloadReturning([undefined, 'https://demo-plombier.pages.dev'])
+
+    expect(await currentTenantDomain(client)).toBeNull()
+
+    vi.advanceTimersByTime(31_000)
+    expect(await currentTenantDomain(client)).toBe('https://demo-plombier.pages.dev')
+  })
+
+  it('ne relit pas la fiche à chaque rendu', async () => {
+    vi.useFakeTimers()
+    process.env.TENANT_SLUG = 'demo-plombier'
+    const { client, calls } = payloadReturning(['https://demo-plombier.pages.dev'])
+
+    await currentTenantDomain(client)
+    await currentTenantDomain(client)
     expect(calls()).toBe(1)
   })
 })

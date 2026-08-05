@@ -31,13 +31,15 @@ export const tenantSlug = async (): Promise<string> => {
 // clients from one request to the next, and a single slot would be refilled on
 // every switch — one extra query per page rather than one per client.
 const cached = new Map<string, number | string>()
-// Même mise en cache pour l'adresse publique, lue à chaque page rendue.
+// L'adresse publique et l'état du client, avec la date de leur dernière
+// lecture : contrairement à l'identifiant, ils changent en cours de vie de
+// l'instance. L'adresse est même renseignée après coup, une fois l'hébergement
+// du client connu — souvent après le premier rendu.
 const domains = new Map<string, string | null>()
-// L'état du client, avec la date de sa dernière lecture : contrairement à
-// l'identifiant, il change en cours de vie de l'instance.
+const domainSeenAt = new Map<string, number>()
 const statuses = new Map<string, string>()
 const statusSeenAt = new Map<string, number>()
-const STATUS_TTL_MS = 30_000
+const TENANT_TTL_MS = 30_000
 
 /**
  * Resolve the configured slug to a tenant id.
@@ -120,7 +122,7 @@ const assertServed = async (payload: Payload, slug: string): Promise<void> => {
   // le rendu.
   const now = Date.now()
   const seen = statusSeenAt.get(slug)
-  if (seen !== undefined && now - seen < STATUS_TTL_MS) {
+  if (seen !== undefined && now - seen < TENANT_TTL_MS) {
     const cachedStatus = statuses.get(slug)
     if (cachedStatus && cachedStatus !== 'active') throw new TenantNotServed(slug, cachedStatus)
     return
@@ -159,8 +161,17 @@ export const currentTenantWhere = async (payload: Payload): Promise<Where> => ({
 export const currentTenantDomain = async (payload: Payload): Promise<string | null> => {
   const slug = await tenantSlug()
   if (!slug) return null
-  const cachedDomain = domains.get(slug)
-  if (cachedDomain !== undefined) return cachedDomain
+
+  // Même fenêtre que l'état : l'adresse est renseignée après la création du
+  // client, souvent après le premier rendu. Sans expiration, le `null` mis en
+  // cache à ce moment-là survivait à la correction, et le site continuait
+  // d'annoncer le repli — l'adresse du back-office — jusqu'au redémarrage.
+  const now = Date.now()
+  const seen = domainSeenAt.get(slug)
+  if (seen !== undefined && now - seen < TENANT_TTL_MS) {
+    const cachedDomain = domains.get(slug)
+    if (cachedDomain !== undefined) return cachedDomain
+  }
 
   const result = await payload.find({
     collection: 'tenants',
@@ -172,6 +183,7 @@ export const currentTenantDomain = async (payload: Payload): Promise<string | nu
   const raw = (result.docs[0] as { publicDomain?: string } | undefined)?.publicDomain?.trim()
   const domain = raw ? (/^https?:\/\//i.test(raw) ? raw : `https://${raw}`) : null
   domains.set(slug, domain)
+  domainSeenAt.set(slug, now)
   return domain
 }
 
@@ -179,6 +191,7 @@ export const currentTenantDomain = async (payload: Payload): Promise<string | nu
 export const resetTenantCache = (): void => {
   cached.clear()
   domains.clear()
+  domainSeenAt.clear()
   statuses.clear()
   statusSeenAt.clear()
 }
