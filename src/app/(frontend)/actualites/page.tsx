@@ -2,9 +2,8 @@ import type { Metadata } from 'next'
 
 import type { Category } from '../../../payload-types'
 import { SiteImage } from '../../../components/site/SiteImage'
-import { serverUrl } from '../../../lib/constants'
 import { formatFrenchDate } from '../../../lib/formatDate'
-import { getPublishedArticles, getSiteGlobals } from '../../../lib/queries'
+import { getPublishedArticles, getSiteGlobals, publicSiteUrl } from '../../../lib/queries'
 
 // Rendered per request (not prerendered at build): it reads the current list of
 // articles, and the image must build without a database.
@@ -12,7 +11,7 @@ export const dynamic = 'force-dynamic'
 
 export async function generateMetadata(): Promise<Metadata> {
   const { identite } = await getSiteGlobals()
-  const canonical = new URL('/actualites', serverUrl()).toString()
+  const canonical = new URL('/actualites', await publicSiteUrl()).toString()
   return {
     title: 'Actualités',
     description: `Toutes les actualités de ${identite.companyName || 'notre établissement'}.`,

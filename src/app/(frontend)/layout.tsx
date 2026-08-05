@@ -8,7 +8,7 @@ import { SiteHeader } from '../../components/site/SiteHeader'
 import { brandColorStyle } from '../../lib/colorStyle'
 import { TenantNotServed } from '../../lib/currentTenant'
 import { serverUrl } from '../../lib/constants'
-import { getPublishedLegalPages, getSiteGlobals } from '../../lib/queries'
+import { getPublishedLegalPages, getSiteGlobals, publicSiteUrl } from '../../lib/queries'
 
 import './styles.css'
 
@@ -18,7 +18,7 @@ export async function generateMetadata(): Promise<Metadata> {
   try {
     const { identite } = await getSiteGlobals()
     return {
-      metadataBase: new URL(serverUrl()),
+      metadataBase: new URL(await publicSiteUrl()),
       title: {
         default: identite.companyName || 'Site vitrine',
         template: `%s — ${identite.companyName || 'Site vitrine'}`,
@@ -26,7 +26,9 @@ export async function generateMetadata(): Promise<Metadata> {
       description: identite.activityDescription || undefined,
     }
   } catch {
-    // No database (e.g. building the Docker image) — a safe default.
+    // No database (e.g. building the Docker image) — a safe default. The
+    // tenant's own address lives in that same database, so `publicSiteUrl()`
+    // would fail here too: the environment is all that is left to read.
     return { metadataBase: new URL(serverUrl()), title: 'Site vitrine' }
   }
 }

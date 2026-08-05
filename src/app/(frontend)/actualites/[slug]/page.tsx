@@ -4,10 +4,9 @@ import { RichText } from '@payloadcms/richtext-lexical/react'
 
 import type { Category } from '../../../../payload-types'
 import { SiteImage } from '../../../../components/site/SiteImage'
-import { serverUrl } from '../../../../lib/constants'
 import { formatFrenchDate } from '../../../../lib/formatDate'
 import { buildArticleJsonLd } from '../../../../lib/jsonLd'
-import { getPublishedArticle, getSiteGlobals } from '../../../../lib/queries'
+import { getPublishedArticle, getSiteGlobals, publicSiteUrl } from '../../../../lib/queries'
 
 // Dynamique sur une instance mutualisée : le client vient d'un en-tête de
 // requête, qu'une page prérendue ne peut pas connaître.
@@ -30,7 +29,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const { identite } = await getSiteGlobals()
 
   const description = article.seo?.description || article.excerpt || identite.activityDescription || undefined
-  const canonical = new URL(`/actualites/${slug}`, serverUrl()).toString()
+  const canonical = new URL(`/actualites/${slug}`, await publicSiteUrl()).toString()
 
   return {
     title: article.seo?.title ? { absolute: article.seo.title } : article.title,
@@ -53,7 +52,12 @@ export default async function ArticlePage({ params }: { params: Promise<Params> 
   if (!article) notFound()
 
   const cat = categoryName(article.category)
-  const jsonLd = buildArticleJsonLd(article, globals.identite, serverUrl(), `/actualites/${slug}`)
+  const jsonLd = buildArticleJsonLd(
+    article,
+    globals.identite,
+    await publicSiteUrl(),
+    `/actualites/${slug}`,
+  )
 
   return (
     <article className="mx-auto max-w-3xl px-6 py-12">
