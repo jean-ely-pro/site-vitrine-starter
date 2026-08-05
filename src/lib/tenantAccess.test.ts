@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import {
   isSuperAdmin,
@@ -24,7 +24,8 @@ import {
  * to another; if one fails, that leak is real.
  */
 
-const req = (user: unknown) => ({ req: { user } }) as never
+const req = (user: unknown, headers?: Record<string, string>) =>
+  ({ req: { user, headers: new Headers(headers) } }) as never
 
 const superAdmin = { id: 1, role: 'super-admin' }
 const boulanger = { id: 2, role: 'admin', tenants: [{ tenant: 10 }] }
@@ -106,8 +107,44 @@ describe('cloisonnement', () => {
 })
 
 describe('accès anonyme (site public statique)', () => {
-  it('ne voit que le contenu publié, jamais les brouillons', () => {
+  // Une installation dédiée ne tient qu'un client dans sa base : rien à
+  // cloisonner, et publié-seulement reste la bonne réponse.
+  it('sur instance dédiée, ne voit que le contenu publié', () => {
+    delete process.env.TENANT_FROM_HEADER
     expect(tenantReadPublished(req(null))).toEqual({ _status: { equals: 'published' } })
+  })
+
+  it("sur instance dédiée, n'obéit pas à l'en-tête", () => {
+    // L'en-tête vient du réseau : l'honorer là où il n'est pas attendu
+    // laisserait une requête forgée choisir son client.
+    delete process.env.TENANT_FROM_HEADER
+    expect(tenantReadPublished(req(null, { 'x-tenant-slug': 'un-autre' }))).toEqual({
+      _status: { equals: 'published' },
+    })
+  })
+
+  describe('sur installation mutualisée', () => {
+    beforeEach(() => {
+      process.env.TENANT_FROM_HEADER = 'true'
+    })
+    afterEach(() => {
+      delete process.env.TENANT_FROM_HEADER
+    })
+
+    it('ne rend rien à qui ne nomme aucun client', () => {
+      // Le défaut corrigé : filtrer sur `_status` sans nommer le client servait
+      // les pages publiées de TOUS les clients à n'importe quel appelant.
+      // `access.read` est le seul filtre appliqué par l'API REST — le greffon
+      // multi-tenant ne cloisonne que l'interface d'administration.
+      expect(tenantReadPublished(req(null))).toBe(false)
+      expect(tenantReadPublished(req(null, { 'x-tenant-slug': '   ' }))).toBe(false)
+    })
+
+    it('borne la lecture au client nommé, et au seul contenu publié', () => {
+      expect(tenantReadPublished(req(null, { 'x-tenant-slug': 'demo-fleuriste' }))).toEqual({
+        and: [{ 'tenant.slug': { equals: 'demo-fleuriste' } }, { _status: { equals: 'published' } }],
+      })
+    })
   })
 
   it("n'a aucun accès aux collections sans cycle de publication", () => {

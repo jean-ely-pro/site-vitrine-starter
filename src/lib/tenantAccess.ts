@@ -94,13 +94,48 @@ export const scopeUsersToTenants = (user: unknown): true | false | Where =>
   scopeToTenants(user, 'tenants.tenant')
 
 /**
+ * The client named by the request, for callers with no account.
+ *
+ * Mirrors `tenantSlug()` in currentTenant.ts, but reads the header off the
+ * Payload request: an access function runs inside the REST route, where
+ * `next/headers` is not the request being answered.
+ *
+ * Callers check `TENANT_FROM_HEADER` before trusting this — the header comes
+ * from the network and nothing else.
+ */
+const requestedTenantSlug = (req: { headers?: Headers }): string =>
+  req.headers?.get('x-tenant-slug')?.trim() || ''
+
+/**
  * Read access for tenant-owned content that the public site consumes.
  *
- * Anonymous callers are the published static site: they must name a tenant, so
- * the endpoint filters by tenant itself. Here they get published documents only.
+ * Signed-in staff see their own clients' documents, drafts included. Anonymous
+ * callers see published documents of the one client they name, and nothing at
+ * all if they name none.
+ *
+ * The naming is not decoration. `access.read` is the only filter the REST API
+ * applies — the multi-tenant plugin scopes the admin UI, not this route — so
+ * returning published-only without a tenant clause served every client's pages
+ * to anyone who asked, whatever host they came in on. Public content, but a
+ * client's pages readable from another's domain, and each new page exposed the
+ * moment it is published rather than when its site goes live.
+ *
+ * The public site itself is unaffected either way: it renders through
+ * `queries.ts`, which filters by tenant and overrides access.
  */
 export const tenantReadPublished: Access = ({ req }) => {
-  if (!req.user) return { _status: { equals: 'published' } }
+  if (!req.user) {
+    // A dedicated instance holds a single client in its own database: there is
+    // no second client to leak, and published-only stays the right answer.
+    if (process.env.TENANT_FROM_HEADER !== 'true') {
+      return { _status: { equals: 'published' } }
+    }
+    const slug = requestedTenantSlug(req)
+    if (!slug) return false
+    // `tenant.slug` rather than an id: an access function must not query, and
+    // Payload resolves the relationship's own field in the join.
+    return { and: [{ 'tenant.slug': { equals: slug } }, { _status: { equals: 'published' } }] }
+  }
   return scopeToTenants(req.user)
 }
 
