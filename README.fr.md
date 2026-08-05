@@ -39,9 +39,21 @@ pnpm install
 cp .env.example .env
 ```
 
-Éditez ensuite `.env` et renseignez au moins `PAYLOAD_SECRET` (une longue chaîne aléatoire,
-par ex. `openssl rand -base64 32`) et `TENANT_SLUG` (voir ci-dessous). Le fichier `.env` est
-ignoré par git et ne doit jamais être committé.
+Éditez ensuite `.env` et renseignez au moins `PAYLOAD_SECRET` et `TENANT_SLUG` (voir
+ci-dessous). Le fichier `.env` est ignoré par git et ne doit jamais être committé.
+
+`PAYLOAD_SECRET` signe les jetons d'authentification : générez-le plutôt que de l'inventer.
+
+```bash
+openssl rand -base64 32
+```
+
+Sous Windows, `openssl` est fourni avec Git : la commande fonctionne dans Git Bash. Si votre
+terminal ne le trouve pas, Node donne le même résultat :
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+```
 
 **`TENANT_SLUG` désigne le client que ce site affiche.** Une même base peut contenir
 plusieurs clients : l'administration sait lequel montrer grâce au compte connecté, mais le
