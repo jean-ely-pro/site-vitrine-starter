@@ -22,7 +22,7 @@ contrastes suffisants, hiérarchie des titres saine — au lieu de les lui laiss
 
 ## Prérequis
 
-- **Node.js ≥ 20.9** et **pnpm ≥ 9** (`corepack enable` installe pnpm)
+- **Node.js ≥ 20.12** et **pnpm ≥ 9** (`corepack enable` installe pnpm)
 - **Docker** et **Docker Compose** (pour la base de données, et éventuellement toute la stack)
 
 ## Démarrage
