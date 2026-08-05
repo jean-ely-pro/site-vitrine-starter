@@ -1,3 +1,4 @@
+import { TenantField as TenantField_1d0591e3cf4f332c83a86da13a0de59a } from '@payloadcms/plugin-multi-tenant/client'
 import { LinkLabelWarnings as LinkLabelWarnings_71fb029c2c420ba6ee6858013d677c58 } from '../../../components/admin/LinkLabelWarnings'
 import { UnsavedChangesGuard as UnsavedChangesGuard_4cf1b9aecf44cba4cdd5e7aa807a9c72 } from '../../../components/admin/UnsavedChangesGuard'
 import { PublicationStatus as PublicationStatus_24ae346e118a265e1898e033bf41eed6 } from '../../../components/admin/PublicationStatus'
@@ -14,21 +15,27 @@ import { ItalicFeatureClient as ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0
 import { HeadingFeatureClient as HeadingFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { ParagraphFeatureClient as ParagraphFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { SeoPreview as SeoPreview_752ed51552c58b98feed87d2595b772d } from '../../../components/admin/SeoPreview'
+import { AssignTenantFieldTrigger as AssignTenantFieldTrigger_1d0591e3cf4f332c83a86da13a0de59a } from '@payloadcms/plugin-multi-tenant/client'
 import { MediaFileInfo as MediaFileInfo_7cbb36f16e1a235540f1852848850b54 } from '../../../components/admin/MediaFileInfo'
 import { FolderTableCell as FolderTableCell_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
 import { FolderField as FolderField_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
 import { SendTestMessage as SendTestMessage_961ea5b512b00c36337a935f91e9bbc3 } from '../../../components/admin/SendTestMessage'
 import { PasswordStrength as PasswordStrength_0522c4b7a9ebdff6b34871a25f53faf6 } from '../../../components/admin/PasswordStrength'
 import { TwoFactorSetup as TwoFactorSetup_7b422cb4e6269ffa63a0e68662579b6d } from '../../../components/admin/TwoFactorSetup'
-import { FolderTypeField as FolderTypeField_2b8867833a34864a02ddf429b0728a40 } from '@payloadcms/next/client'
+import { WatchTenantCollection as WatchTenantCollection_1d0591e3cf4f332c83a86da13a0de59a } from '@payloadcms/plugin-multi-tenant/client'
 import { ContrastChecker as ContrastChecker_ae4a80453bb4bd4f8076788a9c0c55e2 } from '../../../components/admin/ContrastChecker'
 import { ColorInput as ColorInput_41a5ccb1adcfa9b699019daf8156de04 } from '../../../components/admin/ColorInput'
+import { FolderTypeField as FolderTypeField_2b8867833a34864a02ddf429b0728a40 } from '@payloadcms/next/client'
 import { BackupManager as BackupManager_515387b30f24c4542bd680eccd7ca2d0 } from '../../../components/admin/BackupManager'
 import { DiagnosticView as DiagnosticView_0240bd62db4ea4593c77fc8c327c87cd } from '../../../components/admin/DiagnosticView'
+import { GlobalViewRedirect as GlobalViewRedirect_d6d5f193a167989e2ee7d14202901e62 } from '@payloadcms/plugin-multi-tenant/rsc'
+import { TenantSelector as TenantSelector_d6d5f193a167989e2ee7d14202901e62 } from '@payloadcms/plugin-multi-tenant/rsc'
+import { TenantSelectionProvider as TenantSelectionProvider_d6d5f193a167989e2ee7d14202901e62 } from '@payloadcms/plugin-multi-tenant/rsc'
 import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
 
 /** @type import('payload').ImportMap */
 export const importMap = {
+  "@payloadcms/plugin-multi-tenant/client#TenantField": TenantField_1d0591e3cf4f332c83a86da13a0de59a,
   "/components/admin/LinkLabelWarnings#LinkLabelWarnings": LinkLabelWarnings_71fb029c2c420ba6ee6858013d677c58,
   "/components/admin/UnsavedChangesGuard#UnsavedChangesGuard": UnsavedChangesGuard_4cf1b9aecf44cba4cdd5e7aa807a9c72,
   "/components/admin/PublicationStatus#PublicationStatus": PublicationStatus_24ae346e118a265e1898e033bf41eed6,
@@ -45,16 +52,21 @@ export const importMap = {
   "@payloadcms/richtext-lexical/client#HeadingFeatureClient": HeadingFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "@payloadcms/richtext-lexical/client#ParagraphFeatureClient": ParagraphFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "/components/admin/SeoPreview#SeoPreview": SeoPreview_752ed51552c58b98feed87d2595b772d,
+  "@payloadcms/plugin-multi-tenant/client#AssignTenantFieldTrigger": AssignTenantFieldTrigger_1d0591e3cf4f332c83a86da13a0de59a,
   "/components/admin/MediaFileInfo#MediaFileInfo": MediaFileInfo_7cbb36f16e1a235540f1852848850b54,
   "@payloadcms/next/rsc#FolderTableCell": FolderTableCell_f9c02e79a4aed9a3924487c0cd4cafb1,
   "@payloadcms/next/rsc#FolderField": FolderField_f9c02e79a4aed9a3924487c0cd4cafb1,
   "/components/admin/SendTestMessage#SendTestMessage": SendTestMessage_961ea5b512b00c36337a935f91e9bbc3,
   "/components/admin/PasswordStrength#PasswordStrength": PasswordStrength_0522c4b7a9ebdff6b34871a25f53faf6,
   "/components/admin/TwoFactorSetup#TwoFactorSetup": TwoFactorSetup_7b422cb4e6269ffa63a0e68662579b6d,
-  "@payloadcms/next/client#FolderTypeField": FolderTypeField_2b8867833a34864a02ddf429b0728a40,
+  "@payloadcms/plugin-multi-tenant/client#WatchTenantCollection": WatchTenantCollection_1d0591e3cf4f332c83a86da13a0de59a,
   "/components/admin/ContrastChecker#ContrastChecker": ContrastChecker_ae4a80453bb4bd4f8076788a9c0c55e2,
   "/components/admin/ColorInput#ColorInput": ColorInput_41a5ccb1adcfa9b699019daf8156de04,
+  "@payloadcms/next/client#FolderTypeField": FolderTypeField_2b8867833a34864a02ddf429b0728a40,
   "/components/admin/BackupManager#BackupManager": BackupManager_515387b30f24c4542bd680eccd7ca2d0,
   "/components/admin/DiagnosticView#DiagnosticView": DiagnosticView_0240bd62db4ea4593c77fc8c327c87cd,
+  "@payloadcms/plugin-multi-tenant/rsc#GlobalViewRedirect": GlobalViewRedirect_d6d5f193a167989e2ee7d14202901e62,
+  "@payloadcms/plugin-multi-tenant/rsc#TenantSelector": TenantSelector_d6d5f193a167989e2ee7d14202901e62,
+  "@payloadcms/plugin-multi-tenant/rsc#TenantSelectionProvider": TenantSelectionProvider_d6d5f193a167989e2ee7d14202901e62,
   "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1
 }
