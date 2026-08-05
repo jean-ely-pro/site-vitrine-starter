@@ -17,7 +17,10 @@ export const slugField = (options?: {
     name: 'slug',
     type: 'text',
     label: options?.label ?? 'Adresse de la page',
-    unique: true,
+    // Pas `unique: true` : ce serait une contrainte sur toute la base, et un
+    // seul client pourrait alors avoir une page `/contact`. L'unicité est
+    // portée par l'index composite `(tenant, slug)` déclaré sur chaque
+    // collection concernée — unique là où il le faut, par client.
     index: true,
     admin: {
       position: 'sidebar',

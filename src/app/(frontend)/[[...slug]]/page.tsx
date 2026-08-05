@@ -12,9 +12,22 @@ import {
   getSiteGlobals,
 } from '../../../lib/queries'
 
-// Statically rendered and cached, then refreshed on demand when the owner saves
-// (see the revalidation hooks), with an hourly fallback.
-export const revalidate = 3600
+/**
+ * Statically rendered and cached, then refreshed on demand when the owner saves
+ * (see the revalidation hooks), with an hourly fallback.
+ *
+ * Except on a mutualised instance, where the client is named by a request
+ * header: reading it makes the route dynamic, and a prerendered page would
+ * either freeze one client's content for everyone or fail with
+ * DYNAMIC_SERVER_USAGE. There, every request renders — which is also what the
+ * static export needs, since it snapshots each client in turn.
+ */
+// Next.js exige une valeur littérale ici : elle ne peut pas dépendre de la
+// configuration. force-dynamic convient aux deux modèles — une instance
+// mutualisée en a besoin (le client vient d'un en-tête de requête), et une
+// instance dédiée n'y perd rien, puisque le site livré est un export statique
+// et que l'édition n'a pas à être mise en cache.
+export const dynamic = 'force-dynamic'
 
 type Params = { slug?: string[] }
 
@@ -23,6 +36,9 @@ const resolveSlug = (segments?: string[]) => segments?.[0] ?? HOME_SLUG
 const pathFor = (slug: string) => (slug === HOME_SLUG ? '/' : `/${slug}`)
 
 export async function generateStaticParams() {
+  // Sur une instance mutualisée, prérendre reviendrait à figer les pages d'un
+  // seul client pour tout le monde : le client n'est connu qu'à la requête.
+  if (process.env.TENANT_FROM_HEADER === 'true') return []
   try {
     const pages = await getPublishedPages()
     return pages

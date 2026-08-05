@@ -9,7 +9,14 @@ import { formatFrenchDate } from '../../../../lib/formatDate'
 import { buildArticleJsonLd } from '../../../../lib/jsonLd'
 import { getPublishedArticle, getSiteGlobals } from '../../../../lib/queries'
 
-export const revalidate = 3600
+// Dynamique sur une instance mutualisée : le client vient d'un en-tête de
+// requête, qu'une page prérendue ne peut pas connaître.
+// Next.js exige une valeur littérale ici : elle ne peut pas dépendre de la
+// configuration. force-dynamic convient aux deux modèles — une instance
+// mutualisée en a besoin (le client vient d'un en-tête de requête), et une
+// instance dédiée n'y perd rien, puisque le site livré est un export statique
+// et que l'édition n'a pas à être mise en cache.
+export const dynamic = 'force-dynamic'
 
 type Params = { slug: string }
 
