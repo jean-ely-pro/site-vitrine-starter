@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 
 import { isSuperAdmin, superAdminOnly } from '../lib/tenantAccess'
+import { guardTenantHasNoUsers, purgeTenantContent } from './hooks/purgeTenant'
 
 /**
  * The clients hosted on this installation.
@@ -33,6 +34,13 @@ export const Tenants: CollectionConfig = {
     create: superAdminOnly,
     update: superAdminOnly,
     delete: superAdminOnly,
+  },
+  hooks: {
+    // L'ordre compte : refuser d'abord si des comptes sont rattachés, purger
+    // ensuite. Les clés étrangères étant en `ON DELETE set null`, la purge doit
+    // précéder la suppression — après, les lignes ne portent plus de client et
+    // deviennent introuvables.
+    beforeDelete: [guardTenantHasNoUsers, purgeTenantContent],
   },
   fields: [
     {
@@ -74,7 +82,10 @@ export const Tenants: CollectionConfig = {
       ],
       admin: {
         position: 'sidebar',
-        description: 'Un client suspendu ou archivé n’est plus servi publiquement.',
+        description:
+          'Un client suspendu ou archivé n’est plus servi publiquement, mais ses contenus ' +
+          'sont conservés. Supprimer le client, en revanche, efface définitivement ses pages, ' +
+          'actualités, médias, réglages et messages reçus.',
       },
     },
     {
