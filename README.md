@@ -40,7 +40,17 @@ cp .env.example .env
 ```
 
 Then edit `.env` and set at least `PAYLOAD_SECRET` (a long random string, e.g.
-`openssl rand -base64 32`). `.env` is git-ignored and must never be committed.
+`openssl rand -base64 32`) and `TENANT_SLUG` (see below). `.env` is git-ignored and must
+never be committed.
+
+**`TENANT_SLUG` names the client this site renders.** One database may hold several
+clients: the admin knows which one from the signed-in user, but the public site has no
+user, so it has to be told. Set it to the client's address (slug), exactly as entered
+under Clients → Address — you create that client in step 5.
+
+Without it the public site stops with *« TENANT_SLUG manquant… »*; with a slug no client
+matches, *« Client « … » introuvable »*. Both are deliberate: a silent fallback would
+serve one client's content under another's domain.
 
 ### 3. Start PostgreSQL
 
@@ -58,7 +68,19 @@ pnpm dev
 
 The site is served on <http://localhost:3000> and the admin on
 <http://localhost:3000/admin>. On first launch the admin walks you through creating the
-first user.
+first user, who becomes the **super-admin**: without it nobody could create anything.
+
+### 5. Create the client
+
+Nothing renders until a client exists — the public site answers *« Client « … »
+introuvable »*.
+
+In the admin, under **Clients**, create one whose **address (slug)** matches the
+`TENANT_SLUG` you set in step 2, character for character. Then create a page with the
+address `accueil` and **publish** it: the public site only shows published content.
+
+Two clients may each have their own `/accueil` — uniqueness applies to the
+*(client, address)* pair, not to the address alone.
 
 ### Full stack in Docker (production-like)
 
@@ -101,6 +123,8 @@ The admin interface is entirely in French — it is the surface the end client u
 | --- | --- |
 | `PAYLOAD_SECRET` | Secret used to sign authentication tokens. **Required.** |
 | `DATABASE_URI` | PostgreSQL connection string. |
+| `TENANT_SLUG` | Address (slug) of the client this instance renders. **Required** — the public site has no signed-in user to infer it from. |
+| `TENANT_FROM_HEADER` | `true` only on a mutualised installation, where one instance serves every client and each request names its own via `X-Tenant-Slug`. Leave empty on a dedicated instance: the header comes from the network, and honouring it would let a crafted request pick a client. |
 | `NEXT_PUBLIC_SERVER_URL` | Public site URL (absolute links, sitemap, share previews). |
 | `DATABASE_PUSH` | `true` syncs the schema on boot in development. In production the schema comes from migrations, not push (push needs the dev toolchain, absent from the standalone image). |
 

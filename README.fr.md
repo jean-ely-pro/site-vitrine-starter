@@ -40,8 +40,19 @@ cp .env.example .env
 ```
 
 Éditez ensuite `.env` et renseignez au moins `PAYLOAD_SECRET` (une longue chaîne aléatoire,
-par ex. `openssl rand -base64 32`). Le fichier `.env` est ignoré par git et ne doit jamais
-être committé.
+par ex. `openssl rand -base64 32`) et `TENANT_SLUG` (voir ci-dessous). Le fichier `.env` est
+ignoré par git et ne doit jamais être committé.
+
+**`TENANT_SLUG` désigne le client que ce site affiche.** Une même base peut contenir
+plusieurs clients : l'administration sait lequel montrer grâce au compte connecté, mais le
+site public n'a pas de compte — il faut donc le lui dire. Renseignez l'adresse (le
+« slug ») du client, exactement telle que saisie dans Clients → Adresse ; ce client est
+créé à l'étape 5.
+
+Sans cette variable, le site public s'arrête sur « TENANT_SLUG manquant… » ; avec un slug
+qui ne correspond à aucun client, sur « Client « … » introuvable ». Les deux erreurs sont
+volontaires : un repli silencieux publierait le contenu d'un client sous le domaine d'un
+autre.
 
 ### 3. Démarrer PostgreSQL
 
@@ -60,7 +71,20 @@ pnpm dev
 
 Le site est servi sur <http://localhost:3000> et l'admin sur
 <http://localhost:3000/admin>. Au premier lancement, l'admin vous guide pour créer le
-premier utilisateur.
+premier utilisateur, qui devient **super-admin** : sans lui, personne ne pourrait rien
+créer.
+
+### 5. Créer le client
+
+Rien ne s'affiche tant qu'aucun client n'existe : le site public répond « Client « … »
+introuvable ».
+
+Dans l'admin, sous **Clients**, créez-en un dont l'**adresse (slug)** est identique au
+`TENANT_SLUG` renseigné à l'étape 2, au caractère près. Créez ensuite une page d'adresse
+`accueil` et **publiez-la** : le site public ne montre que le contenu publié.
+
+Deux clients peuvent chacun avoir leur `/accueil` — l'unicité porte sur le couple
+*(client, adresse)*, pas sur l'adresse seule.
 
 ### Stack complète dans Docker (proche de la production)
 
@@ -106,6 +130,8 @@ client final.
 | --- | --- |
 | `PAYLOAD_SECRET` | Secret utilisé pour signer les jetons d'authentification. **Obligatoire.** |
 | `DATABASE_URI` | Chaîne de connexion PostgreSQL. |
+| `TENANT_SLUG` | Adresse (slug) du client que cette instance affiche. **Obligatoire** — le site public n'a aucun compte connecté d'où le déduire. |
+| `TENANT_FROM_HEADER` | `true` uniquement sur une installation mutualisée, où une seule instance sert tous les clients, chaque requête nommant le sien par `X-Tenant-Slug`. À laisser vide sur une instance dédiée : l'en-tête vient du réseau, et l'honorer permettrait à une requête forgée de choisir son client. |
 | `NEXT_PUBLIC_SERVER_URL` | URL publique du site (liens absolus, sitemap, aperçus de partage). |
 | `DATABASE_PUSH` | `true` synchronise le schéma au démarrage en développement. En production, le schéma vient des migrations, pas du push (le push nécessite l'outillage de dev, absent de l'image standalone). |
 
