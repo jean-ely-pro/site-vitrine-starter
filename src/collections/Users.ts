@@ -14,7 +14,7 @@ import { enforcePasswordPolicy } from './hooks/enforcePasswordPolicy'
 import { stampPasswordChange } from './hooks/passwordChange'
 import { twoFactorDisable, twoFactorSetup, twoFactorVerify } from './endpoints/twoFactor'
 
-const isAdmin = (req: { user?: { role?: string } | null }): boolean =>
+const isAdmin = (req: { user?: { role?: string | null } | null }): boolean =>
   req.user?.role === 'admin' || req.user?.role === 'super-admin'
 
 export const Users: CollectionConfig = {
@@ -117,9 +117,44 @@ export const Users: CollectionConfig = {
         update: superAdminOnlyField,
       },
       admin: {
+        // `access.update` above is what actually refuses the change — but
+        // Payload enforces it by dropping the field from the payload, before
+        // any collection hook runs. The write is correctly ignored and the
+        // response still reads « Mis à jour avec succès », so an administrator
+        // who edits a role is told it worked and finds it unchanged.
+        //
+        // Nothing can turn that into a refusal from here, so the form stops the
+        // edit from being offered at all: the editable field shows only for the
+        // agency. `readOnly` takes a boolean, not a function, hence the pair of
+        // fields rather than one — the read-only twin follows just below.
+        condition: (_data, _siblingData, { user }) => user?.role === 'super-admin',
         description:
           'Le super-administrateur (agence) gère tous les clients ; ' +
           'l’administrateur gère les accès de son client ; l’éditeur gère uniquement les contenus.',
+      },
+    },
+    {
+      // The same role, shown to everyone else: an administrator needs to know
+      // who is an editor, and seeing it greyed out answers the question the
+      // silent refusal used to answer wrongly.
+      name: 'roleLecture',
+      type: 'text',
+      label: 'Rôle',
+      virtual: true,
+      admin: {
+        condition: (_data, _siblingData, { user }) => user?.role !== 'super-admin',
+        readOnly: true,
+        description: 'Seule l’agence peut modifier un rôle.',
+      },
+      hooks: {
+        afterRead: [
+          ({ siblingData }) =>
+            ({
+              'super-admin': 'Super-administrateur (agence)',
+              admin: 'Administrateur',
+              editor: 'Éditeur',
+            })[siblingData?.role as string] ?? siblingData?.role,
+        ],
       },
     },
     {
