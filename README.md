@@ -101,6 +101,13 @@ docker compose up --build
 
 The admin interface is entirely in French — it is the surface the end client uses.
 
+## Documentation
+
+| Document | Who it is for |
+| --- | --- |
+| [Adapter le front à un métier](./docs/front-par-metier.md) *(French)* | You are starting on the project and shaping a site's look: blocks, colours, checks. |
+| [Multi-tenant (base mutualisée)](./docs/multi-tenant.md) *(French)* | You are touching access rules or isolation between clients. |
+
 ## Useful scripts
 
 | Command | What it does |

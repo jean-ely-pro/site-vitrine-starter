@@ -108,6 +108,13 @@ docker compose up --build
 L'interface d'administration est entièrement en français — c'est la surface qu'utilise le
 client final.
 
+## Documentation
+
+| Document | Pour qui |
+| --- | --- |
+| [Adapter le front à un métier](./docs/front-par-metier.md) | Vous démarrez sur le projet et devez façonner l'apparence d'un site : blocs, couleurs, vérifications. |
+| [Multi-tenant (base mutualisée)](./docs/multi-tenant.md) | Vous touchez aux règles d'accès ou à l'isolation entre clients. |
+
 ## Scripts utiles
 
 | Commande | Rôle |
