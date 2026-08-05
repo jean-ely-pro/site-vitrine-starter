@@ -7,7 +7,13 @@ vi.mock('next/headers', () => ({
 }))
 
 
-import { currentTenantId, currentTenantWhere, resetTenantCache, tenantSlug } from './currentTenant'
+import {
+  currentTenantId,
+  currentTenantWhere,
+  resetTenantCache,
+  tenantSlug,
+  TenantNotServed,
+} from './currentTenant'
 
 /**
  * Resolving which client the public site renders.
@@ -17,7 +23,7 @@ import { currentTenantId, currentTenantWhere, resetTenantCache, tenantSlug } fro
  * content ends up published under another client's domain.
  */
 
-const payloadWith = (docs: Array<{ id: number }>) => {
+const payloadWith = (docs: Array<{ id: number; status?: string }>) => {
   let calls = 0
   return {
     client: { find: async () => ({ docs: (calls++, docs) }) } as never,
@@ -124,5 +130,51 @@ describe('résolution', () => {
     process.env.TENANT_SLUG = 'demo-fleuriste'
     const autre = payloadWith([{ id: 20 }])
     expect(await currentTenantId(autre.client)).toBe(20)
+  })
+})
+
+/**
+ * Un client suspendu n'est plus servi.
+ *
+ * Le champ « État » l'annonçait — « Un client suspendu ou archivé n'est plus
+ * servi publiquement » — sans que rien ne l'applique : suspendre restait sans
+ * effet, et sans avertissement. C'est le geste qu'on fait pour un impayé ou à
+ * la demande d'un client ; il doit couper le site.
+ */
+describe('client suspendu ou archivé', () => {
+  it('refuse de servir un client suspendu', async () => {
+    process.env.TENANT_SLUG = 'demo-boulanger'
+    const { client } = payloadWith([{ id: 10, status: 'suspended' }])
+    await expect(currentTenantId(client)).rejects.toThrow(TenantNotServed)
+  })
+
+  it('refuse aussi un client archivé, et le distingue', async () => {
+    process.env.TENANT_SLUG = 'demo-boulanger'
+    const { client } = payloadWith([{ id: 10, status: 'archived' }])
+    // Le visiteur d'un site archivé n'a pas à lire « réessayez plus tard ».
+    await expect(currentTenantId(client)).rejects.toMatchObject({ status: 'archived' })
+  })
+
+  it('sert un client actif', async () => {
+    process.env.TENANT_SLUG = 'demo-boulanger'
+    const { client } = payloadWith([{ id: 10, status: 'active' }])
+    expect(await currentTenantId(client)).toBe(10)
+  })
+
+  it('sert un client dont l’état n’est pas renseigné', async () => {
+    // Une base antérieure au champ ne doit pas se retrouver hors ligne.
+    process.env.TENANT_SLUG = 'demo-boulanger'
+    const { client } = payloadWith([{ id: 10 }])
+    expect(await currentTenantId(client)).toBe(10)
+  })
+
+  it('ne coûte pas une requête de plus à la résolution initiale', async () => {
+    // L'état arrive avec la fiche du client : le redemander aussitôt doublerait
+    // le coût de chaque premier rendu.
+    process.env.TENANT_SLUG = 'demo-boulanger'
+    const { client, calls } = payloadWith([{ id: 10, status: 'active' }])
+    await currentTenantId(client)
+    await currentTenantId(client)
+    expect(calls()).toBe(1)
   })
 })

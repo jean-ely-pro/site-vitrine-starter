@@ -1,9 +1,12 @@
 import type { Metadata } from 'next'
 import React from 'react'
 
+import { redirect } from 'next/navigation'
+
 import { SiteFooter } from '../../components/site/SiteFooter'
 import { SiteHeader } from '../../components/site/SiteHeader'
 import { brandColorStyle } from '../../lib/colorStyle'
+import { TenantNotServed } from '../../lib/currentTenant'
 import { serverUrl } from '../../lib/constants'
 import { getPublishedLegalPages, getSiteGlobals } from '../../lib/queries'
 
@@ -35,12 +38,25 @@ export default async function FrontendLayout({ children }: { children: React.Rea
   // footer come back as soon as the data is reachable at request time.
   let site: Awaited<ReturnType<typeof getSiteGlobals>> | null = null
   let legalPages: Awaited<ReturnType<typeof getPublishedLegalPages>> = []
+  // Un client suspendu ou archivé n'est plus servi. Traité ici plutôt que dans
+  // chaque route : le layout enveloppe tout le site public, donc aucune adresse
+  // n'y échappe — ni les actualités, ni les pages légales, ni une route ajoutée
+  // plus tard.
+  let unavailable: 'suspended' | 'archived' | null = null
   try {
     site = await getSiteGlobals()
     legalPages = await getPublishedLegalPages()
-  } catch {
+  } catch (error) {
+    if (error instanceof TenantNotServed) {
+      unavailable = error.status === 'archived' ? 'archived' : 'suspended'
+    }
     site = null
   }
+
+  // Redirigé vers une route plutôt que rendu ici : un layout répond 200, ce qui
+  // ferait indexer « Site indisponible » comme le contenu du site. La route
+  // répond 503 (ou 410 si archivé) et interdit l'indexation.
+  if (unavailable) redirect(`/indisponible?etat=${unavailable}`)
 
   const year = new Date().getFullYear()
 

@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 
 import { LegalPageView } from '../../../components/site/LegalPageView'
 import { PageView } from '../../../components/site/PageView'
+import { TenantNotServed } from '../../../lib/currentTenant'
 import { HOME_SLUG, serverUrl } from '../../../lib/constants'
 import { buildPageMetadata } from '../../../lib/pageMetadata'
 import {
@@ -56,7 +57,16 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const { slug: segments } = await params
   const slug = resolveSlug(segments)
 
-  const page = await getPublishedPage(slug)
+  // Les métadonnées sont produites avant la page : sans ce garde, un client
+  // suspendu ferait échouer la requête ici, avant d'atteindre le rendu qui sait
+  // pourtant quoi afficher.
+  let page
+  try {
+    page = await getPublishedPage(slug)
+  } catch (error) {
+    if (error instanceof TenantNotServed) return { title: 'Site indisponible' }
+    throw error
+  }
   if (page) {
     const { identite } = await getSiteGlobals()
     return buildPageMetadata(page, identite, serverUrl(), pathFor(slug))
@@ -78,6 +88,8 @@ export default async function SitePage({ params }: { params: Promise<Params> }) 
   const slug = resolveSlug(segments)
   const isHome = !segments || segments.length === 0
 
+  // Un client suspendu est intercepté par le layout, qui enveloppe toutes les
+  // routes : rien à traiter ici.
   const page = await getPublishedPage(slug)
   if (page) {
     const globals = await getSiteGlobals()

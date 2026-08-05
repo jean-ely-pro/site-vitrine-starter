@@ -33,6 +33,11 @@ export const tenantSlug = async (): Promise<string> => {
 const cached = new Map<string, number | string>()
 // Même mise en cache pour l'adresse publique, lue à chaque page rendue.
 const domains = new Map<string, string | null>()
+// L'état du client, avec la date de sa dernière lecture : contrairement à
+// l'identifiant, il change en cours de vie de l'instance.
+const statuses = new Map<string, string>()
+const statusSeenAt = new Map<string, number>()
+const STATUS_TTL_MS = 30_000
 
 /**
  * Resolve the configured slug to a tenant id.
@@ -41,6 +46,23 @@ const domains = new Map<string, string | null>()
  * misconfigured deployment ends up publishing another client's content under
  * the wrong domain: the failure must be loud and immediate.
  */
+/**
+ * A client that exists but is no longer served.
+ *
+ * Its own type, so the public pages can tell it apart from a misconfiguration:
+ * a suspended client is a deliberate state with a page of its own, while a
+ * missing `TENANT_SLUG` is an error to fix.
+ */
+export class TenantNotServed extends Error {
+  readonly status: string
+
+  constructor(slug: string, status: string) {
+    super(`Client « ${slug} » ${status === 'archived' ? 'archivé' : 'suspendu'} : site non servi.`)
+    this.name = 'TenantNotServed'
+    this.status = status
+  }
+}
+
 export const currentTenantId = async (payload: Payload): Promise<number | string> => {
   const slug = await tenantSlug()
   if (!slug) {
@@ -49,7 +71,10 @@ export const currentTenantId = async (payload: Payload): Promise<number | string
     )
   }
   const known = cached.get(slug)
-  if (known !== undefined) return known
+  if (known !== undefined) {
+    await assertServed(payload, slug)
+    return known
+  }
 
   const result = await payload.find({
     collection: 'tenants',
@@ -64,8 +89,55 @@ export const currentTenantId = async (payload: Payload): Promise<number | string
   if (!tenant) {
     throw new Error(`Client « ${slug} » introuvable : vérifiez TENANT_SLUG.`)
   }
+  // Cette requête ramène déjà l'état : l'enregistrer évite de le redemander
+  // aussitôt après, la résolution initiale ne coûtant ainsi qu'un aller-retour.
+  const status = (tenant as { status?: string }).status ?? 'active'
+  statuses.set(slug, status)
+  statusSeenAt.set(slug, Date.now())
+  if (status !== 'active') throw new TenantNotServed(slug, status)
+
   cached.set(slug, tenant.id)
   return tenant.id
+}
+
+/**
+ * Refuse to serve a client whose state is not `active`.
+ *
+ * The field promised it — « Un client suspendu ou archivé n'est plus servi
+ * publiquement » — while nothing enforced it: suspending had no effect at all,
+ * and no warning said so. Suspension is what one does for an unpaid invoice or
+ * at a client's request, so it has to actually stop the site.
+ *
+ * Only the editing instance and the platform render are covered. A site already
+ * exported to static hosting is a set of files that no longer depends on this
+ * server; taking it down is a separate act.
+ */
+const assertServed = async (payload: Payload, slug: string): Promise<void> => {
+  // L'identifiant d'un client ne change jamais et se garde indéfiniment ; son
+  // état, si. Le relire à chaque page coûterait une requête par affichage, ne
+  // jamais le relire ferait attendre un redémarrage — d'où cette fenêtre
+  // courte : une suspension s'applique en moins d'une minute, sans peser sur
+  // le rendu.
+  const now = Date.now()
+  const seen = statusSeenAt.get(slug)
+  if (seen !== undefined && now - seen < STATUS_TTL_MS) {
+    const cachedStatus = statuses.get(slug)
+    if (cachedStatus && cachedStatus !== 'active') throw new TenantNotServed(slug, cachedStatus)
+    return
+  }
+
+  const result = await payload.find({
+    collection: 'tenants',
+    where: { slug: { equals: slug } },
+    limit: 1,
+    depth: 0,
+    overrideAccess: true,
+    select: { status: true },
+  })
+  const status = (result.docs[0] as { status?: string } | undefined)?.status ?? 'active'
+  statuses.set(slug, status)
+  statusSeenAt.set(slug, now)
+  if (status !== 'active') throw new TenantNotServed(slug, status)
 }
 
 /** Restrict a public query to the configured client. */
@@ -107,4 +179,6 @@ export const currentTenantDomain = async (payload: Payload): Promise<string | nu
 export const resetTenantCache = (): void => {
   cached.clear()
   domains.clear()
+  statuses.clear()
+  statusSeenAt.clear()
 }
