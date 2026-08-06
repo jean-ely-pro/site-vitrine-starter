@@ -26,6 +26,7 @@ import { WatchTenantCollection as WatchTenantCollection_1d0591e3cf4f332c83a86da1
 import { ContrastChecker as ContrastChecker_ae4a80453bb4bd4f8076788a9c0c55e2 } from '../../../components/admin/ContrastChecker'
 import { ColorInput as ColorInput_41a5ccb1adcfa9b699019daf8156de04 } from '../../../components/admin/ColorInput'
 import { FolderTypeField as FolderTypeField_2b8867833a34864a02ddf429b0728a40 } from '@payloadcms/next/client'
+import { PublishSite as PublishSite_cfc0ba690c30a52bf79798ce49db2f16 } from '../../../components/admin/PublishSite'
 import { BackupManager as BackupManager_515387b30f24c4542bd680eccd7ca2d0 } from '../../../components/admin/BackupManager'
 import { DiagnosticView as DiagnosticView_0240bd62db4ea4593c77fc8c327c87cd } from '../../../components/admin/DiagnosticView'
 import { GlobalViewRedirect as GlobalViewRedirect_d6d5f193a167989e2ee7d14202901e62 } from '@payloadcms/plugin-multi-tenant/rsc'
@@ -63,6 +64,7 @@ export const importMap = {
   "/components/admin/ContrastChecker#ContrastChecker": ContrastChecker_ae4a80453bb4bd4f8076788a9c0c55e2,
   "/components/admin/ColorInput#ColorInput": ColorInput_41a5ccb1adcfa9b699019daf8156de04,
   "@payloadcms/next/client#FolderTypeField": FolderTypeField_2b8867833a34864a02ddf429b0728a40,
+  "/components/admin/PublishSite#PublishSite": PublishSite_cfc0ba690c30a52bf79798ce49db2f16,
   "/components/admin/BackupManager#BackupManager": BackupManager_515387b30f24c4542bd680eccd7ca2d0,
   "/components/admin/DiagnosticView#DiagnosticView": DiagnosticView_0240bd62db4ea4593c77fc8c327c87cd,
   "@payloadcms/plugin-multi-tenant/rsc#GlobalViewRedirect": GlobalViewRedirect_d6d5f193a167989e2ee7d14202901e62,
