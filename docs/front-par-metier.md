@@ -200,6 +200,13 @@ Le gérant saisit alors son contenu réel, et le site est publié en fichiers
 statiques : pas de base, pas d'exécution côté serveur. Le CMS ne sert qu'à le
 fabriquer.
 
+Tu n'as donc ni image à pousser, ni export à livrer, ni client à créer : ta pull
+request suffit. Transmets avec elle le `TENANT_SLUG` que tu as employé — le
+client créé côté agence doit porter le même — et la liste des blocs ajoutés.
+
+La suite, côté formateur, est décrite dans
+[`flux-apprenant.md`](../../site-vitrine-central/docs/flux-apprenant.md).
+
 ---
 
 ## Pannes courantes
