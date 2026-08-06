@@ -36,6 +36,32 @@ const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
 /**
+ * The secret signing every authentication token.
+ *
+ * Falling back to an empty string would let the application boot and sign its
+ * tokens with a guessable key, without a single warning — so a missing secret
+ * stops production, like a missing `TENANT_SLUG` does.
+ *
+ * Building the image is the one case that legitimately has no secret: `next
+ * build` loads this config, and the environment holds nothing sensitive yet
+ * (see the placeholder in the Dockerfile). That stage is not `NODE_ENV=production`
+ * — the runner stage sets it, the builder does not — so the placeholder keeps
+ * working while a real deployment cannot start without a real secret.
+ */
+export const payloadSecret = (
+  env: { PAYLOAD_SECRET?: string; NODE_ENV?: string } = process.env,
+): string => {
+  const secret = env.PAYLOAD_SECRET?.trim()
+  if (secret) return secret
+  if (env.NODE_ENV === 'production') {
+    throw new Error(
+      'PAYLOAD_SECRET manquant : les jetons d’authentification seraient signés avec une clé vide.',
+    )
+  }
+  return 'development-only-secret'
+}
+
+/**
  * The client-owned settings sections. Each is stored once per tenant.
  *
  * Listed in one place because the same list drives both the collections built
@@ -171,7 +197,7 @@ export default buildConfig({
   },
   ...(email ? { email } : {}),
   editor: lexicalEditor(),
-  secret: process.env.PAYLOAD_SECRET || '',
+  secret: payloadSecret(),
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },
