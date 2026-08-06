@@ -27,12 +27,9 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          # La version minimale déclarée par package.json (engines), pas la
-          # dernière 20.x : c'est celle qu'un contributeur peut avoir, donc
-          # celle sur laquelle les tests doivent passer. Elle vaut aussi celle
-          # du Dockerfile, pour que le contrôle porte sur ce qui tourne en
-          # production.
-          node-version: '20.19.0'
+          # .nvmrc est la source unique : le Dockerfile en part lui aussi, pour
+          # que le contrôle porte sur la version qui tourne en production.
+          node-version-file: .nvmrc
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile

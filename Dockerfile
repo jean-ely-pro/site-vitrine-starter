@@ -4,7 +4,13 @@
 # binaries are simplest and most reliable on glibc, and the project constraint
 # requires sharp to be present in the RUNNER stage, not only the builder.
 
-FROM node:20.19.0-bookworm-slim AS base
+# La version de Node vit dans .nvmrc, que lisent aussi les workflows et `nvm use`.
+# Une seule source, pour que le contrôle en intégration porte sur la version qui
+# tourne en production. Un `ARG` avant le premier `FROM` ne peut pas être calculé :
+# la valeur est recopiée ici, et un test (version-node.test.ts) échoue si les deux
+# divergent.
+ARG NODE_VERSION=20.19.0
+FROM node:${NODE_VERSION}-bookworm-slim AS base
 # The corepack bundled with Node 20 cannot load pnpm 10, so install a current
 # one. The pnpm version itself comes from "packageManager" in package.json.
 RUN npm install -g corepack@latest && corepack enable

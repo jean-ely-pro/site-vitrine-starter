@@ -46,9 +46,9 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          # La version du Dockerfile : le contrôle porte sur ce qui tourne en
-          # production.
-          node-version: '20.19.0'
+          # .nvmrc est la source unique, celle dont part aussi le Dockerfile : le
+          # contrôle porte sur la version qui tourne en production.
+          node-version-file: .nvmrc
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
