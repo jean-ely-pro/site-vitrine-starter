@@ -1,15 +1,12 @@
 # Contrôle du code avant fusion.
 #
-# `publish-image.yml` construit l'image sur `main`, donc *après* la fusion, et
-# publie quoi qu'il arrive : il n'arrête que ce qui casse la construction. Les
-# tests et le typage se vérifient donc ici, tant que la pull request est encore
-# ouverte.
+# Sur `main`, le même contrôle est le préalable de `publish-image.yml`, qui ne
+# construit rien tant qu'il n'est pas passé : le refaire ici doublerait chaque
+# fusion sans rien apprendre de plus. D'où les pull requests seules.
 
 name: CI
 
 on:
-  push:
-    branches: [main]
   pull_request:
 
 concurrency:

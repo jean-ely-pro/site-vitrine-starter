@@ -1,4 +1,4 @@
-# Publie l'image applicative sur GHCR.
+# Publie l'image applicative sur GHCR, après vérification.
 #
 # `latest` est ce que toutes les instances clientes exécutent par défaut : il
 # n'est produit que par ce workflow, sur `main`. Une construction locale depuis
@@ -6,6 +6,12 @@
 #
 # Les branches et les tags git obtiennent leur propre tag d'image, ce qui permet
 # de faire tourner une variante devant un client sans toucher aux autres.
+#
+# Les tests et le typage passent ici avant la construction, et pas seulement
+# dans ci.yml sur la pull request : `main` reçoit aussi des fusions dont aucune
+# pull request n'a été contrôlée, et ce workflow publie également des tags et
+# des branches à la demande. Une régression qui ne casse pas la construction
+# partirait sinon sur `latest`, devant tous les clients à la fois.
 
 name: Publier l'image
 
@@ -26,7 +32,35 @@ env:
   IMAGE: ghcr.io/${{ github.repository }}
 
 jobs:
+  # Même contrôle que ci.yml, sur la référence qui va être publiée. Séparé du
+  # travail de publication : un échec ici laisse `publier` à l'état « skipped »,
+  # et le registre garde l'image précédente plutôt que d'en recevoir une
+  # mauvaise.
+  verifier:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # La version du Dockerfile : le contrôle porte sur ce qui tourne en
+          # production.
+          node-version: '20.19.0'
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Vérifier le typage
+        run: pnpm exec tsc --noEmit
+
+      - name: Lancer les tests
+        run: pnpm test
+
   publier:
+    needs: verifier
     runs-on: ubuntu-latest
     permissions:
       contents: read
