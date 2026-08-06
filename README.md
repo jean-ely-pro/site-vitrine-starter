@@ -22,7 +22,7 @@ contrast, a sound heading hierarchy — instead of leaving them to the owner.
 
 ## Requirements
 
-- **Node.js ≥ 20.9** and **pnpm ≥ 9** (`corepack enable` sets pnpm up)
+- **Node.js ≥ 20.12** and **pnpm ≥ 9** (`corepack enable` sets pnpm up)
 - **Docker** and **Docker Compose** (for the database, and optionally the full stack)
 
 ## Getting started

@@ -1,0 +1,49 @@
+# Contrôle du code avant fusion.
+#
+# `publish-image.yml` construit l'image sur `main`, donc *après* la fusion, et
+# publie quoi qu'il arrive : il n'arrête que ce qui casse la construction. Les
+# tests et le typage se vérifient donc ici, tant que la pull request est encore
+# ouverte.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  # Une poussée de plus sur une branche rend le contrôle précédent caduc.
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Le dépôt est en pnpm (packageManager, pnpm-lock.yaml) : `npm ci` ne
+      # trouverait pas de package-lock.json.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # La version minimale déclarée par package.json (engines), pas la
+          # dernière 20.x : c'est celle qu'un contributeur peut avoir, donc
+          # celle sur laquelle les tests doivent passer. Elle vaut aussi celle
+          # du Dockerfile, pour que le contrôle porte sur ce qui tourne en
+          # production.
+          node-version: '20.19.0'
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Les types de Payload sont engendrés (payload-types.ts) et versionnés ;
+      # sans eux, tsc échouerait sur des imports que le dépôt contient pourtant.
+      - name: Vérifier le typage
+        run: pnpm exec tsc --noEmit
+
+      - name: Lancer les tests
+        run: pnpm test
