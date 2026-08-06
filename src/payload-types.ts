@@ -120,10 +120,12 @@ export interface Config {
   };
   fallbackLocale: null;
   globals: {
+    publication: Publication;
     sauvegardes: Sauvegarde;
     diagnostic: Diagnostic;
   };
   globalsSelect: {
+    publication: PublicationSelect<false> | PublicationSelect<true>;
     sauvegardes: SauvegardesSelect<false> | SauvegardesSelect<true>;
     diagnostic: DiagnosticSelect<false> | DiagnosticSelect<true>;
   };
@@ -364,7 +366,7 @@ export interface Tenant {
    */
   slug: string;
   /**
-   * Un client suspendu ou archivé n’est plus servi publiquement.
+   * Un client suspendu ou archivé n’est plus servi publiquement, mais ses contenus sont conservés. Supprimer le client, en revanche, efface définitivement ses pages, actualités, médias, réglages et messages reçus.
    */
   status: 'active' | 'suspended' | 'archived';
   /**
@@ -1530,6 +1532,17 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   createdAt?: T;
 }
 /**
+ * Envoyez vos modifications sur votre site public.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "publication".
+ */
+export interface Publication {
+  id: number;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
  * Sauvegardez votre site et restaurez-le en cas de besoin.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1554,6 +1567,15 @@ export interface Diagnostic {
   id: number;
   updatedAt?: string | null;
   createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "publication_select".
+ */
+export interface PublicationSelect<T extends boolean = true> {
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
