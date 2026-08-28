@@ -27,10 +27,12 @@ import { Identite } from './globals/Identite'
 import { Menu } from './globals/Menu'
 import { PiedDePage } from './globals/PiedDePage'
 import { Reseaux } from './globals/Reseaux'
+import { Publication } from './globals/Publication'
 import { Sauvegardes } from './globals/Sauvegardes'
 import { Diagnostic } from './globals/Diagnostic'
 import { backupEndpoints } from './endpoints/backups'
 import { diagnosticEndpoint } from './endpoints/diagnostic'
+import { publicationEndpoints } from './endpoints/publication'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -142,8 +144,9 @@ export default buildConfig({
   ],
   // Sauvegardes and Diagnostic stay true globals: they describe the
   // installation itself — backup schedule, health of the server — not any one
-  // client's site.
-  globals: [Sauvegardes, Diagnostic],
+  // client's site. Publication joins them: it holds no content, only the state
+  // of this instance's last publication, which the central host owns.
+  globals: [Publication, Sauvegardes, Diagnostic],
   plugins: [
     multiTenantPlugin({
       tenantsSlug: 'tenants',
@@ -165,7 +168,7 @@ export default buildConfig({
   ],
   // The client's static site posts its contact form here from another origin.
   cors: corsOrigins,
-  endpoints: [...backupEndpoints, diagnosticEndpoint],
+  endpoints: [...backupEndpoints, diagnosticEndpoint, ...publicationEndpoints],
   // Automatic backups: on boot and hourly, create a backup if one is due for the
   // configured frequency. A single long-lived server, so an interval is enough.
   onInit: async (payload) => {
