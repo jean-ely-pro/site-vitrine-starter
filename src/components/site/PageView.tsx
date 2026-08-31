@@ -19,7 +19,10 @@ export const PageView = ({
   serverUrl: string
 }) => {
   const blocks = page.layout ?? []
-  const heroFirst = blocks[0]?.blockType === 'hero'
+  const heroFirst =
+    blocks[0]?.blockType === 'hero' ||
+    blocks[0]?.blockType === 'servicesDetail' ||
+    blocks[0]?.blockType === 'servicesIcons'
   const jsonLd = buildLocalBusinessJsonLd(globals.identite, globals.contact, globals.horaires, serverUrl)
 
   return (

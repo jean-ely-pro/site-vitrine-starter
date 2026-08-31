@@ -178,7 +178,7 @@ export interface Page {
   /**
    * Choisi à la création pour pré-remplir la page. Modifier ce champ ensuite ne change pas le contenu déjà en place.
    */
-  template?: ('blank' | 'services' | 'about' | 'pricing') | null;
+  template?: ('blank' | 'services' | 'about' | 'pricing' | 'servicesIcons') | null;
   /**
    * Ajoutez, réordonnez et remplissez les blocs qui composent la page.
    */
@@ -264,6 +264,246 @@ export interface Page {
             id?: string | null;
             blockName?: string | null;
             blockType: 'services';
+          }
+        | {
+            /**
+             * Petit libellé au-dessus du titre. Ex. : « L’excellence au service de l’humain ».
+             */
+            eyebrow?: string | null;
+            /**
+             * Le grand titre de la section. Ex. : « Nos services ».
+             */
+            heading: string;
+            /**
+             * Optionnel. Une phrase d’accroche en italique sous le titre.
+             */
+            intro?: string | null;
+            /**
+             * Une ligne par service, en quinconce, avec sa grande icône à gauche ou à droite.
+             */
+            services?:
+              | {
+                  icon:
+                    | 'home'
+                    | 'scroll'
+                    | 'heartCrack'
+                    | 'heart'
+                    | 'gift'
+                    | 'building'
+                    | 'globe'
+                    | 'scale'
+                    | 'landmark'
+                    | 'calculator'
+                    | 'percent'
+                    | 'trendingUp'
+                    | 'lineChart'
+                    | 'fileText'
+                    | 'fileSearch'
+                    | 'stamp'
+                    | 'lock'
+                    | 'users'
+                    | 'wallet';
+                  title: string;
+                  /**
+                   * Paragraphes et liste à puces décrivant le service.
+                   */
+                  content?: {
+                    root: {
+                      type: string;
+                      children: {
+                        type: any;
+                        version: number;
+                        [k: string]: unknown;
+                      }[];
+                      direction: ('ltr' | 'rtl') | null;
+                      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+                      indent: number;
+                      version: number;
+                    };
+                    [k: string]: unknown;
+                  } | null;
+                  /**
+                   * Optionnel. Une phrase conclusive en italique sous le texte.
+                   */
+                  note?: string | null;
+                  id?: string | null;
+                }[]
+              | null;
+            /**
+             * Petit libellé au-dessus du titre de la grille d’outils.
+             */
+            toolsEyebrow?: string | null;
+            toolsHeading?: string | null;
+            /**
+             * Optionnel. Une phrase sous le titre de la grille.
+             */
+            toolsIntro?: string | null;
+            /**
+             * Les outils en ligne, affichés en cartes dans une grille de trois.
+             */
+            tools?:
+              | {
+                  icon:
+                    | 'home'
+                    | 'scroll'
+                    | 'heartCrack'
+                    | 'heart'
+                    | 'gift'
+                    | 'building'
+                    | 'globe'
+                    | 'scale'
+                    | 'landmark'
+                    | 'calculator'
+                    | 'percent'
+                    | 'trendingUp'
+                    | 'lineChart'
+                    | 'fileText'
+                    | 'fileSearch'
+                    | 'stamp'
+                    | 'lock'
+                    | 'users'
+                    | 'wallet';
+                  title: string;
+                  description: string;
+                  cta: {
+                    label: string;
+                    action?: ('page' | 'phone' | 'email' | 'external') | null;
+                    page?: (number | null) | Page;
+                    /**
+                     * L’adresse complète, par exemple https://exemple.fr.
+                     */
+                    url?: string | null;
+                  };
+                  id?: string | null;
+                }[]
+              | null;
+            /**
+             * Optionnel. De grands mots discrets affichés en fin de section. Ex. : FAMILLE, AVENIR, RIGUEUR.
+             */
+            decorativeWords?: string[] | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'servicesDetail';
+          }
+        | {
+            /**
+             * Petit libellé au-dessus du titre. Ex. : « L’excellence au service de l’humain ».
+             */
+            eyebrow?: string | null;
+            /**
+             * Le grand titre de la section. Ex. : « Nos services ».
+             */
+            heading: string;
+            /**
+             * Optionnel. Une phrase d’accroche en italique sous le titre.
+             */
+            intro?: string | null;
+            /**
+             * Une ligne par service, en quinconce, avec sa grande icône à gauche ou à droite.
+             */
+            services?:
+              | {
+                  icon:
+                    | 'home'
+                    | 'scroll'
+                    | 'heartCrack'
+                    | 'heart'
+                    | 'gift'
+                    | 'building'
+                    | 'globe'
+                    | 'scale'
+                    | 'landmark'
+                    | 'calculator'
+                    | 'percent'
+                    | 'trendingUp'
+                    | 'lineChart'
+                    | 'fileText'
+                    | 'fileSearch'
+                    | 'stamp'
+                    | 'lock'
+                    | 'users'
+                    | 'wallet';
+                  title: string;
+                  /**
+                   * Paragraphes et liste à puces décrivant le service.
+                   */
+                  content?: {
+                    root: {
+                      type: string;
+                      children: {
+                        type: any;
+                        version: number;
+                        [k: string]: unknown;
+                      }[];
+                      direction: ('ltr' | 'rtl') | null;
+                      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+                      indent: number;
+                      version: number;
+                    };
+                    [k: string]: unknown;
+                  } | null;
+                  /**
+                   * Optionnel. Une phrase conclusive en italique sous le texte.
+                   */
+                  note?: string | null;
+                  id?: string | null;
+                }[]
+              | null;
+            /**
+             * Petit libellé au-dessus du titre de la grille d’outils.
+             */
+            toolsEyebrow?: string | null;
+            toolsHeading?: string | null;
+            /**
+             * Optionnel. Une phrase sous le titre de la grille.
+             */
+            toolsIntro?: string | null;
+            /**
+             * Les outils en ligne, affichés en cartes dans une grille de trois.
+             */
+            tools?:
+              | {
+                  icon:
+                    | 'home'
+                    | 'scroll'
+                    | 'heartCrack'
+                    | 'heart'
+                    | 'gift'
+                    | 'building'
+                    | 'globe'
+                    | 'scale'
+                    | 'landmark'
+                    | 'calculator'
+                    | 'percent'
+                    | 'trendingUp'
+                    | 'lineChart'
+                    | 'fileText'
+                    | 'fileSearch'
+                    | 'stamp'
+                    | 'lock'
+                    | 'users'
+                    | 'wallet';
+                  title: string;
+                  description: string;
+                  cta: {
+                    label: string;
+                    action?: ('page' | 'phone' | 'email' | 'external') | null;
+                    page?: (number | null) | Page;
+                    /**
+                     * L’adresse complète, par exemple https://exemple.fr.
+                     */
+                    url?: string | null;
+                  };
+                  id?: string | null;
+                }[]
+              | null;
+            /**
+             * Optionnel. De grands mots discrets affichés en fin de section. Ex. : FAMILLE, AVENIR, RIGUEUR.
+             */
+            decorativeWords?: string[] | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'servicesIcons';
           }
         | {
             /**
@@ -1107,6 +1347,82 @@ export interface PagesSelect<T extends boolean = true> {
                     description?: T;
                     id?: T;
                   };
+              id?: T;
+              blockName?: T;
+            };
+        servicesDetail?:
+          | T
+          | {
+              eyebrow?: T;
+              heading?: T;
+              intro?: T;
+              services?:
+                | T
+                | {
+                    icon?: T;
+                    title?: T;
+                    content?: T;
+                    note?: T;
+                    id?: T;
+                  };
+              toolsEyebrow?: T;
+              toolsHeading?: T;
+              toolsIntro?: T;
+              tools?:
+                | T
+                | {
+                    icon?: T;
+                    title?: T;
+                    description?: T;
+                    cta?:
+                      | T
+                      | {
+                          label?: T;
+                          action?: T;
+                          page?: T;
+                          url?: T;
+                        };
+                    id?: T;
+                  };
+              decorativeWords?: T;
+              id?: T;
+              blockName?: T;
+            };
+        servicesIcons?:
+          | T
+          | {
+              eyebrow?: T;
+              heading?: T;
+              intro?: T;
+              services?:
+                | T
+                | {
+                    icon?: T;
+                    title?: T;
+                    content?: T;
+                    note?: T;
+                    id?: T;
+                  };
+              toolsEyebrow?: T;
+              toolsHeading?: T;
+              toolsIntro?: T;
+              tools?:
+                | T
+                | {
+                    icon?: T;
+                    title?: T;
+                    description?: T;
+                    cta?:
+                      | T
+                      | {
+                          label?: T;
+                          action?: T;
+                          page?: T;
+                          url?: T;
+                        };
+                    id?: T;
+                  };
+              decorativeWords?: T;
               id?: T;
               blockName?: T;
             };

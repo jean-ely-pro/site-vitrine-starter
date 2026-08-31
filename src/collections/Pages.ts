@@ -9,6 +9,8 @@ import { stampPublishedAt } from './hooks/stampPublishedAt'
 import { Hero } from '../blocks/Hero'
 import { Hours } from '../blocks/Hours'
 import { Services } from '../blocks/Services'
+import { ServicesDetail } from '../blocks/ServicesDetail'
+import { ServicesIcons } from '../blocks/ServicesIcons'
 import { TextImage } from '../blocks/TextImage'
 import { seoField } from '../fields/seo'
 import { slugField } from '../fields/slug'
@@ -87,7 +89,7 @@ export const Pages: CollectionConfig = {
       type: 'blocks',
       label: 'Contenu de la page',
       labels: { singular: 'Bloc', plural: 'Blocs' },
-      blocks: [Hero, TextImage, Services, Hours, ContactBlock, ContactFormBlock, CallToAction],
+      blocks: [Hero, TextImage, Services, ServicesDetail, ServicesIcons, Hours, ContactBlock, ContactFormBlock, CallToAction],
       admin: {
         description: 'Ajoutez, réordonnez et remplissez les blocs qui composent la page.',
       },

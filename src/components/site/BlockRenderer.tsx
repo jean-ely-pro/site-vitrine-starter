@@ -3,6 +3,9 @@ import { RichText } from '@payloadcms/richtext-lexical/react'
 import type { Contact, Horaire, Page } from '../../payload-types'
 import { DAY_LABELS_FR, formatDayHours } from '../../lib/hours'
 import { pageLink, resolveCta } from '../../lib/links'
+import { getServiceIcon } from '../../lib/serviceIcons'
+import { ServicesDetailView } from '../../blocks/ServicesDetail'
+import { ServicesIconsView } from '../../blocks/ServicesIcons'
 import { ContactForm } from './ContactForm'
 import { SiteImage } from './SiteImage'
 
@@ -190,6 +193,10 @@ export const BlockRenderer = ({
           return <TextImageBlock key={key} block={block} />
         case 'services':
           return <ServicesBlock key={key} block={block} />
+        case 'servicesDetail':
+          return <ServicesDetailView key={key} block={block} contact={contact} asH1={firstHeroAsH1 && i === 0} />
+        case 'servicesIcons':
+          return <ServicesIconsView key={key} block={block} contact={contact} asH1={firstHeroAsH1 && i === 0} />
         case 'hours':
           return <HoursBlock key={key} block={block} horaires={horaires} />
         case 'contactDetails':

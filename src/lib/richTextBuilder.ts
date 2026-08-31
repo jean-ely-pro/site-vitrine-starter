@@ -1,8 +1,9 @@
 /**
  * Build a Lexical rich-text value from a simple list of sections. Used to
- * pre-fill generated legal pages with real prose the owner can then edit.
+ * pre-fill generated legal pages and page templates with real prose the owner
+ * can then edit.
  */
-type Section = { heading?: string; text?: string }
+type Section = { heading?: string; text?: string; items?: string[] }
 
 const textNode = (text: string) => ({
   type: 'text',
@@ -34,6 +35,26 @@ const paragraph = (text: string) => ({
   children: [textNode(text)],
 })
 
+const bulletList = (items: string[]) => ({
+  type: 'list',
+  format: '',
+  indent: 0,
+  version: 1,
+  direction: 'ltr',
+  listType: 'bullet',
+  tag: 'ul',
+  start: 1,
+  children: items.map((item) => ({
+    type: 'listitem',
+    format: '',
+    indent: 0,
+    version: 1,
+    direction: 'ltr',
+    value: 1,
+    children: [textNode(item)],
+  })),
+})
+
 export const buildRichText = (sections: Section[]) => ({
   root: {
     type: 'root',
@@ -45,6 +66,7 @@ export const buildRichText = (sections: Section[]) => ({
       const nodes: unknown[] = []
       if (section.heading) nodes.push(heading(section.heading))
       if (section.text) nodes.push(paragraph(section.text))
+      if (section.items) nodes.push(bulletList(section.items))
       return nodes
     }),
   },
